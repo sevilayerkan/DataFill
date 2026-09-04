@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { useTranslation } from "@/hooks/useTranslation"
+import { copyTextToClipboard } from "@/lib/clipboard"
 import { addressData as enAddressData } from "@/data/en/address-data"
 import { addressData as trAddressData } from "@/data/tr/address-data"
 
@@ -52,10 +53,10 @@ export function AddressGenerator({ language, onCopy }: AddressGeneratorProps) {
     }
   }
 
-  const copyToClipboard = () => {
+  const copyToClipboard = async () => {
     if (address) {
-      navigator.clipboard.writeText(address)
-      onCopy(t("addressCopied"))
+      const ok = await copyTextToClipboard(address)
+      onCopy(t(ok ? "addressCopied" : "copyFailed"))
     } else {
       onCopy(t("noAddressToCopy"))
     }

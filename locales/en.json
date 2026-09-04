@@ -47,6 +47,7 @@
   "random": "Random",
   "wordlist": "Wordlist",
   "copiedToClipboard": "Copied to clipboard!",
+  "copyFailed": "Copy failed! Clipboard access was blocked.",
   "emailCopied": "Email copied to clipboard!",
   "nameCopied": "Name copied to clipboard!",
   "addressCopied": "Address copied to clipboard!",

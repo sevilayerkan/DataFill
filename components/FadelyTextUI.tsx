@@ -15,6 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { MiscGenerator } from "./MiscGenerator"
 import { useTranslation } from "@/hooks/useTranslation"
 import { LOREM_MAX_LENGTH, LOREM_MIN_LENGTH, clampLoremLength, generateLoremText } from "@/lib/lorem"
+import { copyTextToClipboard } from "@/lib/clipboard"
 import { useTheme } from "next-themes"
 
 const LANGUAGE_STORAGE_KEY = "fadelytext-language"
@@ -115,10 +116,10 @@ export default function FadelyTextUI() {
     setLineCount(text.length > 0 ? text.split(/\r\n|\r|\n/).length : 0)
   }
 
-  const copyToClipboard = (text: string) => {
+  const copyToClipboard = async (text: string) => {
     if (text.length > 0) {
-      navigator.clipboard.writeText(text)
-      showNotificationMessage(t("copiedToClipboard"))
+      const ok = await copyTextToClipboard(text)
+      showNotificationMessage(t(ok ? "copiedToClipboard" : "copyFailed"))
     } else {
       showNotificationMessage(t("noTextToCopy"))
     }

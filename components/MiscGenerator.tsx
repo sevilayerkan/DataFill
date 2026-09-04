@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -9,6 +9,8 @@ import { nameData as trNameData } from "@/data/tr/name-data"
 import { passwordData as enPasswordData } from "@/data/en/password-data"
 import { passwordData as trPasswordData } from "@/data/tr/password-data"
 import { generatePhoneNumber, getPhoneCountry, phoneCountries } from "@/data/phone-data"
+import { copyTextToClipboard } from "@/lib/clipboard"
+import { randomInt, randomUUID, type RandomSource } from "@/lib/random"
 import { useTranslation } from "@/hooks/useTranslation"
 import {
   buildExportFilename,
@@ -87,22 +89,22 @@ export function passwordPool(language: "en" | "tr"): string[] {
 }
 
 /** Unique passwords: shuffled pool first, then pool-based suffixed variants if n exceeds the pool. */
-export function uniquePasswords(n: number, language: "en" | "tr"): string[] {
+export function uniquePasswords(n: number, language: "en" | "tr", rand?: RandomSource): string[] {
   const pool = passwordPool(language)
-  const values = takeUnique(pool, n)
+  const values = takeUnique(pool, n, rand)
   if (values.length >= n) return values
   const seen = new Set(values)
   let guard = 0
   while (values.length < n && guard < n * 50 + 50) {
     guard += 1
-    const candidate = `${pool[Math.floor(Math.random() * pool.length)]}-${randomDigits(6)}`
+    const candidate = `${pool[randomInt(pool.length, rand)]}-${randomDigits(6, rand)}`
     if (seen.has(candidate)) continue
     seen.add(candidate)
     values.push(candidate)
   }
   // Practically unreachable: index-suffixed fallback is unique by construction.
   while (values.length < n) {
-    values.push(`${pool[values.length % pool.length]}-x${values.length}-${randomDigits(6)}`)
+    values.push(`${pool[values.length % pool.length]}-x${values.length}-${randomDigits(6, rand)}`)
   }
   return values
 }
@@ -125,22 +127,6 @@ export function clampPasswordLength(length: number): number {
   )
 }
 
-function randomIndex(bound: number): number {
-  const cryptoObj = (globalThis as unknown as { crypto?: Crypto }).crypto
-  if (cryptoObj && typeof cryptoObj.getRandomValues === "function" && bound > 0) {
-    const array = new Uint32Array(1)
-    // Rejection sampling to avoid modulo bias.
-    const limit = Math.floor(0x1_0000_0000 / bound) * bound
-    let value = 0
-    do {
-      cryptoObj.getRandomValues(array)
-      value = array[0]
-    } while (value >= limit)
-    return value % bound
-  }
-  return Math.floor(Math.random() * bound)
-}
-
 /**
  * Fully-random password: pure charset sampling, no words, no language dependence.
  * Guarantees at least one char from each enabled set when length allows it.
@@ -148,16 +134,17 @@ function randomIndex(bound: number): number {
 export function generateRandomPassword(
   length: number,
   options: RandomPasswordOptions = DEFAULT_RANDOM_PASSWORD_OPTIONS,
+  rand?: RandomSource,
 ): string {
   const safeLength = clampPasswordLength(length)
   const charset = buildPasswordCharset(options)
-  const chars: string[] = Array.from({ length: safeLength }, () => charset[randomIndex(charset.length)])
+  const chars: string[] = Array.from({ length: safeLength }, () => charset[randomInt(charset.length, rand)])
 
   const required: string[] = []
-  if (options.lowercase) required.push(LOWER_CHARS[randomIndex(LOWER_CHARS.length)])
-  if (options.uppercase) required.push(UPPER_CHARS[randomIndex(UPPER_CHARS.length)])
-  if (options.digits) required.push(DIGIT_CHARS[randomIndex(DIGIT_CHARS.length)])
-  if (options.symbols) required.push(SYMBOL_CHARS[randomIndex(SYMBOL_CHARS.length)])
+  if (options.lowercase) required.push(LOWER_CHARS[randomInt(LOWER_CHARS.length, rand)])
+  if (options.uppercase) required.push(UPPER_CHARS[randomInt(UPPER_CHARS.length, rand)])
+  if (options.digits) required.push(DIGIT_CHARS[randomInt(DIGIT_CHARS.length, rand)])
+  if (options.symbols) required.push(SYMBOL_CHARS[randomInt(SYMBOL_CHARS.length, rand)])
 
   // No charset selected -> charset already fell back to lowercase, nothing to force.
   const enabledSets = required.length
@@ -165,8 +152,8 @@ export function generateRandomPassword(
 
   const positions = new Set<number>()
   for (const char of required) {
-    let pos = randomIndex(safeLength)
-    while (positions.has(pos)) pos = randomIndex(safeLength)
+    let pos = randomInt(safeLength, rand)
+    while (positions.has(pos)) pos = randomInt(safeLength, rand)
     positions.add(pos)
     chars[pos] = char
   }
@@ -177,6 +164,7 @@ export function generateRandomPassword(
 export function generateRandomPasswords(
   n: number,
   options: RandomPasswordOptions = DEFAULT_RANDOM_PASSWORD_OPTIONS,
+  rand?: RandomSource,
 ): string[] {
   const safeN = Math.min(MAX_COUNT, Math.max(1, Math.floor(n) || 1))
   const safeLength = clampPasswordLength(options.length)
@@ -185,35 +173,35 @@ export function generateRandomPasswords(
   let attempts = 0
   while (values.length < safeN && attempts < safeN * 20 + 20) {
     attempts += 1
-    const candidate = generateRandomPassword(safeLength, options)
+    const candidate = generateRandomPassword(safeLength, options, rand)
     if (seen.has(candidate)) continue
     seen.add(candidate)
     values.push(candidate)
   }
   while (values.length < safeN) {
-    values.push(generateRandomPassword(safeLength, { ...options, length: safeLength }))
+    values.push(generateRandomPassword(safeLength, { ...options, length: safeLength }, rand))
   }
   return values
 }
 
 /** Fisher-Yates shuffle + take: strict sampling without replacement. */
-export function takeUnique<T>(pool: T[], n: number): T[] {
+export function takeUnique<T>(pool: T[], n: number, rand?: RandomSource): T[] {
   const copy = [...pool]
   for (let i = copy.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
+    const j = randomInt(i + 1, rand)
     ;[copy[i], copy[j]] = [copy[j], copy[i]]
   }
   return copy.slice(0, Math.min(n, copy.length))
 }
 
-function randomDigits(length: number) {
-  return Array.from({ length }, () => Math.floor(Math.random() * 10)).join("")
+function randomDigits(length: number, rand?: RandomSource) {
+  return Array.from({ length }, () => randomInt(10, rand)).join("")
 }
 
-export function generateTCKN() {
+export function generateTCKN(rand?: RandomSource) {
   // TCKN is formed from nine random digits and two check digits.
   // The first digit cannot be zero.
-  const digits = [Math.floor(Math.random() * 9) + 1, ...Array.from({ length: 8 }, () => Math.floor(Math.random() * 10))]
+  const digits = [randomInt(9, rand) + 1, ...Array.from({ length: 8 }, () => randomInt(10, rand))]
   const oddSum = digits[0] + digits[2] + digits[4] + digits[6] + digits[8]
   const evenSum = digits[1] + digits[3] + digits[5] + digits[7]
   const tenthDigit = ((oddSum * 7 - evenSum) % 10 + 10) % 10
@@ -222,14 +210,20 @@ export function generateTCKN() {
   return [...digits, tenthDigit, eleventhDigit % 10].join("")
 }
 
-function generateValue(type: Exclude<DataType, "fullName" | "date" | "password">, phoneCountryCode = "US"): string {
+const ADDRESS_STREETS = ["Main", "Oak", "Pine", "Cedar"]
+
+function generateValue(
+  type: Exclude<DataType, "fullName" | "date" | "password">,
+  phoneCountryCode = "US",
+  rand?: RandomSource,
+): string {
   switch (type) {
-    case "email": return `user${randomDigits(8)}@example.com`
-    case "address": return `${Math.floor(Math.random() * 900) + 100} ${["Main", "Oak", "Pine", "Cedar"][Math.floor(Math.random() * 4)]} Street, New York, NY`
-    case "phone": return generatePhoneNumber(getPhoneCountry(phoneCountryCode, "US"))
-    case "uuid": return crypto.randomUUID()
-    case "tckn": return generateTCKN()
-    case "username": return `user${randomDigits(8)}`
+    case "email": return `user${randomDigits(8, rand)}@example.com`
+    case "address": return `${randomInt(900, rand) + 100} ${ADDRESS_STREETS[randomInt(ADDRESS_STREETS.length, rand)]} Street, New York, NY`
+    case "phone": return generatePhoneNumber(getPhoneCountry(phoneCountryCode, "US"), rand)
+    case "uuid": return randomUUID()
+    case "tckn": return generateTCKN(rand)
+    case "username": return `user${randomDigits(8, rand)}`
   }
 }
 
@@ -245,10 +239,19 @@ export function MiscGenerator({ onCopy, language }: Props) {
   const [randomPasswordOptions, setRandomPasswordOptions] = useState<RandomPasswordOptions>(
     DEFAULT_RANDOM_PASSWORD_OPTIONS,
   )
-  const [exportRows, setExportRows] = useState<ExportRow[]>(() => [
-    { id: crypto.randomUUID(), value: takeUnique(fullNamePool(language), 1)[0] },
-  ])
-  const [value, setValue] = useState(() => exportRows[0].value)
+  const [exportRows, setExportRows] = useState<ExportRow[]>([])
+  const [value, setValue] = useState("")
+
+  // Row ids/values need client-side randomness: populate after mount so the
+  // SSR/prerender output stays deterministic and hydration matches.
+  useEffect(() => {
+    const rows: ExportRow[] = [{ id: randomUUID(), value: takeUnique(fullNamePool(language), 1)[0] }]
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setExportRows(rows)
+    setValue(rows.map((row) => row.value).join("\n"))
+    // Initial language only; later changes apply on the next generate.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const formatRows = (rows: ExportRow[], outputFormat: OutputFormat) => {
     if (outputFormat === "json") return formatJson(rows, false)
@@ -301,13 +304,13 @@ export function MiscGenerator({ onCopy, language }: Props) {
         values.push(generateValue(nextType, nextPhoneCountryCode))
       }
     }
-    const rows: ExportRow[] = values.map((item) => ({ id: crypto.randomUUID(), value: item }))
+    const rows: ExportRow[] = values.map((item) => ({ id: randomUUID(), value: item }))
     setExportRows(rows)
     setValue(formatRows(rows, nextFormat))
   }
   const copyValue = async () => {
-    await navigator.clipboard.writeText(value)
-    onCopy(t("miscCopied"))
+    const ok = await copyTextToClipboard(value)
+    onCopy(ok ? t("miscCopied") : t("copyFailed"))
   }
 
   const reformat = (nextFormat: OutputFormat) => {

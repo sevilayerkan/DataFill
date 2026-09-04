@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useTranslation } from "@/hooks/useTranslation"
+import { copyTextToClipboard } from "@/lib/clipboard"
 import { generatePhoneNumber, getPhoneCountry, phoneCountries } from "@/data/phone-data"
 
 interface PhoneNumberGeneratorProps {
@@ -31,10 +32,10 @@ export function PhoneNumberGenerator({ language, onCopy }: PhoneNumberGeneratorP
     generateForCountry()
   }
 
-  const copyToClipboard = () => {
+  const copyToClipboard = async () => {
     if (phoneNumber) {
-      navigator.clipboard.writeText(phoneNumber)
-      onCopy(t("phoneNumberCopied"))
+      const ok = await copyTextToClipboard(phoneNumber)
+      onCopy(t(ok ? "phoneNumberCopied" : "copyFailed"))
     } else {
       onCopy(t("noPhoneNumberToCopy"))
     }

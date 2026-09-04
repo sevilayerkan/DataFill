@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useTranslation } from "@/hooks/useTranslation"
+import { copyTextToClipboard } from "@/lib/clipboard"
 import { nameData as enNameData } from "@/data/en/name-data"
 import { nameData as trNameData } from "@/data/tr/name-data"
 
@@ -44,10 +45,10 @@ export function NameGenerator({ language, onCopy }: NameGeneratorProps) {
     }
   }
 
-  const copyToClipboard = () => {
+  const copyToClipboard = async () => {
     if (name) {
-      navigator.clipboard.writeText(name)
-      onCopy(t("nameCopied"))
+      const ok = await copyTextToClipboard(name)
+      onCopy(t(ok ? "nameCopied" : "copyFailed"))
     } else {
       onCopy(t("noNameToCopy"))
     }

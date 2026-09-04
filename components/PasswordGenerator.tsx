@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
 import { useTranslation } from "@/hooks/useTranslation"
+import { copyTextToClipboard } from "@/lib/clipboard"
 import { passwordData as enPasswordData } from "@/data/en/password-data"
 import { passwordData as trPasswordData } from "@/data/tr/password-data"
 
@@ -139,10 +140,10 @@ export function PasswordGenerator({ language, onCopy }: PasswordGeneratorProps) 
     }
   }
 
-  const copyToClipboard = () => {
+  const copyToClipboard = async () => {
     if (password) {
-      navigator.clipboard.writeText(password)
-      onCopy(t("passwordCopied"))
+      const ok = await copyTextToClipboard(password)
+      onCopy(t(ok ? "passwordCopied" : "copyFailed"))
     } else {
       onCopy(t("noPasswordToCopy"))
     }

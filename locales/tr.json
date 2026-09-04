@@ -47,6 +47,7 @@
   "random": "Rastgele",
   "wordlist": "Kelime Listesi",
   "copiedToClipboard": "Panoya kopyalandı!",
+  "copyFailed": "Kopyalama başarısız! Pano erişimi engellendi.",
   "emailCopied": "E-posta panoya kopyalandı!",
   "nameCopied": "İsim panoya kopyalandı!",
   "addressCopied": "Adres panoya kopyalandı!",

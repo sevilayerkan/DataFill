@@ -1,3 +1,5 @@
+import { randomInt, type RandomSource } from "@/lib/random";
+
 export interface PhoneCountry {
   /** Display name (English). */
   name: string
@@ -36,24 +38,24 @@ export function getPhoneCountry(code: string, fallbackCode = "TR"): PhoneCountry
   return phoneCountries.find((c) => c.code === code) ?? phoneCountries.find((c) => c.code === fallbackCode) ?? phoneCountries[0]
 }
 
-function randomDigit(): string {
-  return Math.floor(Math.random() * 10).toString()
+function randomDigit(rand?: RandomSource): string {
+  return randomInt(10, rand).toString()
 }
 
 /** Generates the national part honoring length + optional leading-digit constraint. */
-export function generateNationalNumber(country: PhoneCountry): string {
+export function generateNationalNumber(country: PhoneCountry, rand?: RandomSource): string {
   const digits: string[] = []
   for (let i = 0; i < country.nationalLength; i++) {
     if (i === 0 && country.leadingDigits && country.leadingDigits.length > 0) {
-      digits.push(country.leadingDigits[Math.floor(Math.random() * country.leadingDigits.length)])
+      digits.push(country.leadingDigits[randomInt(country.leadingDigits.length, rand)])
     } else {
-      digits.push(randomDigit())
+      digits.push(randomDigit(rand))
     }
   }
   return digits.join("")
 }
 
 /** Full international number, e.g. "+905321234567". No spaces so existing `\+\d+` assertions keep passing. */
-export function generatePhoneNumber(country: PhoneCountry): string {
-  return `${country.phoneCode}${generateNationalNumber(country)}`
+export function generatePhoneNumber(country: PhoneCountry, rand?: RandomSource): string {
+  return `${country.phoneCode}${generateNationalNumber(country, rand)}`
 }

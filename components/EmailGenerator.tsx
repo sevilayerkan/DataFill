@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useTranslation } from "@/hooks/useTranslation"
+import { copyTextToClipboard } from "@/lib/clipboard"
 import { emailData as enEmailData } from "@/data/en/email-data"
 import { emailData as trEmailData } from "@/data/tr/email-data"
 
@@ -32,10 +33,10 @@ export function EmailGenerator({ language, onCopy }: EmailGeneratorProps) {
     }
   }
 
-  const copyToClipboard = () => {
+  const copyToClipboard = async () => {
     if (email) {
-      navigator.clipboard.writeText(email)
-      onCopy(t("emailCopied"))
+      const ok = await copyTextToClipboard(email)
+      onCopy(t(ok ? "emailCopied" : "copyFailed"))
     } else {
       onCopy(t("noEmailToCopy"))
     }

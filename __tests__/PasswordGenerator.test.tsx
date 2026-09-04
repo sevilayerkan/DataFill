@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { render, screen, fireEvent } from "@testing-library/react"
+import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import {
   PasswordGenerator,
@@ -51,11 +51,11 @@ describe("PasswordGenerator", () => {
     expect(seen.size).toBe(25)
   })
 
-  it("calls onCopy with correct message when copying", () => {
+  it("calls onCopy with correct message when copying", async () => {
     render(<PasswordGenerator language="en" onCopy={mockOnCopy} />)
     fireEvent.click(screen.getByText("Generate Password"))
     fireEvent.click(screen.getByText("Copy to Clipboard"))
-    expect(mockOnCopy).toHaveBeenCalledWith("Password copied to clipboard!")
+    await waitFor(() => expect(mockOnCopy).toHaveBeenCalledWith("Password copied to clipboard!"))
   })
 
   it("generates word-free ASCII passwords in Turkish mode", () => {
