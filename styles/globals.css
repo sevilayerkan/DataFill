@@ -1,0 +1,112 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 44 14% 85%; /* #DDDAD0 */
+    --foreground: 210 11% 15%; /* #14161c equivalent */
+
+    --card: 44 14% 85%;
+    --card-foreground: 210 11% 15%;
+
+    --popover: 44 14% 85%;
+    --popover-foreground: 210 11% 15%;
+
+    --primary: 210 11% 15%; /* #14161c */
+    --primary-foreground: 44 14% 85%;
+
+    --secondary: 44 14% 90%;
+    --secondary-foreground: 210 11% 15%;
+
+    --muted: 44 14% 90%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 44 14% 90%;
+    --accent-foreground: 210 11% 15%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 44 14% 85%;
+
+    --border: 44 14% 80%;
+    --input: 44 14% 80%;
+    --ring: 210 11% 15%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 220 8% 14%; /* #202329 */
+    --foreground: 210 20% 92%;
+
+    --card: 220 8% 17%;
+    --card-foreground: 210 20% 92%;
+
+    --popover: 220 8% 17%;
+    --popover-foreground: 210 20% 92%;
+
+    --primary: 210 20% 92%;
+    --primary-foreground: 220 8% 14%;
+
+    --secondary: 220 8% 22%;
+    --secondary-foreground: 210 20% 92%;
+
+    --muted: 220 8% 22%;
+    --muted-foreground: 215 12% 68%;
+
+    --accent: 220 8% 22%;
+    --accent-foreground: 210 20% 92%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 20% 92%;
+
+    --border: 220 8% 28%;
+    --input: 220 8% 28%;
+    --ring: 210 20% 92%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Helvetica Neue", Helvetica, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    font-weight: 500;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+.light {
+  color-scheme: light;
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+.bg-green-100 {
+  background-color: #d1fae5;
+}
+
+.border-green-400 {
+  border-color: #34d399;
+}
+
+.text-green-700 {
+  color: #047857;
+}
+
+.dark .bg-green-100 {
+  background-color: #065f46;
+}
+
+.dark .border-green-400 {
+  border-color: #34d399;
+}
+
+.dark .text-green-700 {
+  color: #6ee7b7;
+}

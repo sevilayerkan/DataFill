@@ -1,0 +1,27 @@
+export const addressData = {
+  streets: [
+    "Main St",
+    "Oak Ave",
+    "Maple Rd",
+    "Cedar Ln",
+    "Pine St",
+    "Elm St",
+    "Washington Ave",
+    "Park Rd",
+    "Lake Dr",
+    "River Rd",
+  ],
+  cities: [
+    "New York",
+    "Los Angeles",
+    "Chicago",
+    "Houston",
+    "Phoenix",
+    "Philadelphia",
+    "San Antonio",
+    "San Diego",
+    "Dallas",
+    "San Jose",
+  ],
+  states: ["NY", "CA", "IL", "TX", "AZ", "PA", "FL", "OH", "GA", "NC"],
+}
