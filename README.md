@@ -1,139 +1,139 @@
 # FadelyText
 
-Metin araçları ve sahte veri üreticisi. Lorem ipsum, karakter/kelime sayacı, e-posta, isim, adres, telefon ve şifre üretir. Arayüz İngilizce ve Türkçe’dir.
+Text tools and fake data generator. Generates lorem ipsum, character/word counts, email, name, address, phone number, and password. The UI is available in English and Turkish.
 
-## Gereksinimler
+## Requirements
 
-- [Node.js](https://nodejs.org/) 18 veya üzeri
-- [pnpm](https://pnpm.io/) (önerilir; `pnpm-lock.yaml` kullanılır)
+- [Node.js](https://nodejs.org/) 18 or later
+- [pnpm](https://pnpm.io/) (recommended; `pnpm-lock.yaml` is used)
 
-pnpm yoksa:
+If pnpm is not installed:
 
 ```bash
 npm install -g pnpm
 ```
 
-## Kurulum
+## Installation
 
 ```bash
 cd fadelytext
 pnpm install
 ```
 
-## Çalıştırma
+## Running
 
-Geliştirme sunucusu:
+Development server:
 
 ```bash
 pnpm dev
 ```
 
-Tarayıcıda [http://localhost:3000](http://localhost:3000) adresini açın.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Ortam değişkenleri
+## Environment variables
 
-| Değişken | Açıklama | Varsayılan |
-|----------|----------|------------|
-| `NEXT_PUBLIC_SITE_URL` | Canonical site adresi; Open Graph, `sitemap.xml` ve `robots.txt` için mutlak URL üretir | `http://localhost:3000` |
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `NEXT_PUBLIC_SITE_URL` | Canonical site address; generates absolute URLs for Open Graph, `sitemap.xml`, and `robots.txt` | `http://localhost:3000` |
 
-Üretimde (ör. Vercel) `NEXT_PUBLIC_SITE_URL=https://senin-alanin.com` tanımlayın.
+In production (e.g. Vercel), set `NEXT_PUBLIC_SITE_URL=https://your-domain.com`.
 
-## Diğer komutlar
+## Other commands
 
-| Komut | Açıklama |
-|--------|----------|
-| `pnpm build` | Üretim derlemesi |
-| `pnpm start` | Derlemeden sonra production sunucusu (`pnpm build` sonrası) |
+| Command | Description |
+|--------|-------------|
+| `pnpm build` | Production build |
+| `pnpm start` | Production server after a build (run `pnpm build` first) |
 | `pnpm lint` | ESLint |
 
-pnpm kullanmak istemezseniz `npm install` ve `npm run dev` de çalışır.
+If you prefer not to use pnpm, `npm install` and `npm run dev` work too.
 
 ## `ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION`
 
-pnpm 11, npm’e yeni düşen paketleri (varsayılan ~24 saat) kurmayı reddeder. Bu yüzden `pnpm install` / `pnpm dev` / `pnpm build` kesilebilir.
+pnpm 11 refuses to install packages that were freshly published to npm (default ~24 hours). This can interrupt `pnpm install` / `pnpm dev` / `pnpm build`.
 
-Projede `pnpm-workspace.yaml` içinde `minimumReleaseAge: 0` tanımlıdır. Hâlâ hata alırsan:
+`minimumReleaseAge: 0` is defined in `pnpm-workspace.yaml` in this project. If you still get the error:
 
 ```bash
 pnpm install
 ```
 
-Next.js’in `sharp` paketi için derleme script’i pnpm 11’de onay ister. Onay `allowBuilds.sharp` ile workspace dosyasındadır. Eksikse:
+pnpm 11 asks for approval for Next.js's `sharp` package build script. Approval is granted via `allowBuilds.sharp` in the workspace file. If it is missing:
 
 ```bash
 pnpm approve-builds sharp
 ```
 
-## Özellikler
+## Features
 
-- Lorem ipsum metin üretimi (karakter sayısı, boşluk/özel karakter seçenekleri)
-- Karakter, kelime ve satır sayacı
-- E-posta, isim, adres, telefon numarası ve şifre üretimi
-- Açık / koyu tema
-- İngilizce / Türkçe dil desteği
+- Lorem ipsum text generation (character count, whitespace/special-character options)
+- Character, word, and line counter
+- Email, name, address, phone number, and password generation
+- Light / dark theme
+- English / Turkish language support
 
-## Proje yapısı
+## Project structure
 
-Next.js (App Router) uygulaması. `@/` kök dizine işaret eder (`tsconfig.json` içindeki `paths`).
+A Next.js (App Router) app. `@/` points to the root directory (`paths` in `tsconfig.json`).
 
 ```
 fadelytext/
-├── app/                         # Sayfalar ve iskelet
-│   ├── layout.tsx               # HTML kabuğu, font, metadata (sekme başlığı)
-│   ├── page.tsx                 # Ana sayfa → FadelyTextUI
+├── app/                         # Pages and shell
+│   ├── layout.tsx               # HTML shell, font, metadata (tab title)
+│   ├── page.tsx                 # Home page → FadelyTextUI
 │   └── globals.css
-├── components/                  # Arayüz
-│   ├── FadelyTextUI.tsx         # Ana ekran (sekmeler, tema, üret)
+├── components/                  # UI
+│   ├── FadelyTextUI.tsx         # Main screen (tabs, theme, generate)
 │   ├── EmailGenerator.tsx
 │   ├── NameGenerator.tsx
 │   ├── AddressGenerator.tsx
 │   ├── PhoneNumberGenerator.tsx
 │   ├── PasswordGenerator.tsx
 │   ├── MiscGenerator.tsx
-│   └── ui/                      # shadcn bileşenleri (buton, tab, input)
-├── data/en ve data/tr           # İsim, e-posta, adres listeleri
-├── locales/                     # en.json / tr.json — ekrandaki yazılar
-├── hooks/                       # useTranslation, toast vb.
-├── lib/utils.ts                 # className birleştirme (cn)
-├── public/                      # Statik dosyalar (ikon, svg)
-├── package.json                 # Paket adı ve komutlar
+│   └── ui/                      # shadcn components (button, tab, input)
+├── data/en and data/tr         # Name, email, address lists
+├── locales/                     # en.json / tr.json — on-screen strings
+├── hooks/                       # useTranslation, toast, etc.
+├── lib/utils.ts                 # className merging (cn)
+├── public/                      # Static files (icons, svg)
+├── package.json                 # Package name and scripts
 └── README.md
 ```
 
-Akış: `app/layout.tsx` → `app/page.tsx` → `FadelyTextUI` → sekmeler ve üreticiler.
+Flow: `app/layout.tsx` → `app/page.tsx` → `FadelyTextUI` → tabs and generators.
 
-## Proje adını değiştirme
+## Renaming the project
 
-İsim üç (veya dört) ayrı yerde durur; hangisini değiştirdiğine göre sonuç farklıdır.
+The name lives in three (or four) separate places; the result depends on which one you change.
 
-### 1. npm / pnpm paket adı
+### 1. npm / pnpm package name
 
-`package.json` içindeki `"name"` alanı (şu an `fadelytext`). Küçük harf, boşluksuz olmalıdır. Tarayıcıdaki görünümü değiştirmez.
+The `"name"` field in `package.json` (currently `fadelytext`). It must be lowercase with no spaces. It does not change what is shown in the browser.
 
 ```json
 "name": "fadelytext"
 ```
 
-### 2. Tarayıcı sekmesi başlığı
+### 2. Browser tab title
 
-`app/layout.tsx` içindeki `metadata`. Örnek:
+The `metadata` in `app/layout.tsx`. Example:
 
 ```ts
 export const metadata = {
   title: "FadelyText",
-  description: "Metin araçları ve sahte veri üreticisi",
+  description: "Text tools and fake data generator",
 }
 ```
 
-### 3. Ekranda görünen ürün adı
+### 3. Product name shown on screen
 
-Header `FadelyTextUI.tsx` içinde `t("textTools")` kullanır. Metinler `locales/en.json` ve `locales/tr.json` içindeki `textTools` anahtarındadır.
+The header in `FadelyTextUI.tsx` uses `t("textTools")`. The strings are in the `textTools` key in `locales/en.json` and `locales/tr.json`.
 
 - EN: `"textTools": "FadelyText"`
-- TR: `"textTools": "FadelyText"` (marka adı çevrilmez)
+- TR: `"textTools": "FadelyText"` (brand name is not translated)
 
-Bunlar `"FadelyText"` olduğu için header'da marka adı görünür.
+Since these are `"FadelyText"`, the brand name is shown in the header.
 
-### 4. Klasör adı
+### 4. Folder name
 
-Klasörü yeniden adlandırman yeterlidir; kod klasör adına bağlı import kullanmaz. Bu README’deki `cd fadelytext` satırını da güncelle.
+Renaming the folder is enough; the code does not use folder-name-dependent imports. Also update the `cd fadelytext` line in this README.
