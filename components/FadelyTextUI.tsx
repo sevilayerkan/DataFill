@@ -15,9 +15,12 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { MiscGenerator } from "./MiscGenerator"
 import { useTranslation } from "@/hooks/useTranslation"
 import { LOREM_MAX_LENGTH, LOREM_MIN_LENGTH, clampLoremLength, generateLoremText } from "@/lib/lorem"
+import { useTheme } from "next-themes"
+
+const LANGUAGE_STORAGE_KEY = "fadelytext-language"
 
 export default function FadelyTextUI() {
-  const [theme, setTheme] = useState<"light" | "dark">("light")
+  const { theme, setTheme, resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const [generatedText, setGeneratedText] = useState("")
   const [characterCount, setCharacterCount] = useState(0)
@@ -42,10 +45,26 @@ export default function FadelyTextUI() {
   }, [])
 
   useEffect(() => {
-    if (mounted) {
-      document.body.className = theme
+    try {
+      const stored = window.localStorage.getItem(LANGUAGE_STORAGE_KEY)
+      if (stored === "en" || stored === "tr") {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setLanguage(stored)
+      }
+    } catch {
+      // localStorage may be unavailable (private mode); fall back to default.
     }
-  }, [theme, mounted])
+  }, [])
+
+  useEffect(() => {
+    if (!mounted) return
+    document.documentElement.lang = language
+    try {
+      window.localStorage.setItem(LANGUAGE_STORAGE_KEY, language)
+    } catch {
+      // Ignore persistence failures.
+    }
+  }, [language, mounted])
 
   useEffect(() => {
     if (!settingsOpen) return
@@ -67,8 +86,11 @@ export default function FadelyTextUI() {
     }
   }, [settingsOpen])
 
+  const isDark = mounted ? (resolvedTheme ?? theme) === "dark" : false
+
   const toggleTheme = () => {
-    setTheme(theme === "light" ? "dark" : "light")
+    const current = resolvedTheme ?? theme ?? "light"
+    setTheme(current === "dark" ? "light" : "dark")
   }
 
   const generateText = () => {
@@ -121,12 +143,8 @@ export default function FadelyTextUI() {
     notificationTimeoutRef.current = setTimeout(() => setShowNotification(false), 2000)
   }
 
-  if (!mounted) {
-    return null
-  }
-
   return (
-    <div className={`w-full max-w-3xl ${theme} relative p-4 sm:p-6`}>
+    <div className="w-full max-w-3xl relative p-4 sm:p-6">
       <header className="mb-5 flex items-center justify-between border-b pb-4">
         <a href="#main-content" className="flex items-center gap-2" aria-label={t("textTools")}>
           <span className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-sm font-bold text-primary-foreground">T</span>
@@ -139,7 +157,7 @@ export default function FadelyTextUI() {
         </nav>
         <div className="flex items-center gap-2">
           <Sun className="h-4 w-4" />
-          <Switch checked={theme === "dark"} onCheckedChange={toggleTheme} />
+          <Switch checked={isDark} onCheckedChange={toggleTheme} />
           <Moon className="h-4 w-4" />
           <div ref={settingsRef} className="relative">
             <Button

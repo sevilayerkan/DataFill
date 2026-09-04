@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom/vitest";
-import { vi } from "vitest";
+import { beforeEach, vi } from "vitest";
 
 // jsdom lacks ResizeObserver (needed by Radix Select/Slider). Minimal no-op mock.
 class ResizeObserverMock {
@@ -8,3 +8,10 @@ class ResizeObserverMock {
   disconnect() {}
 }
 vi.stubGlobal("ResizeObserver", ResizeObserverMock);
+
+// Persisted UI state (language via fadelytext-language, theme via next-themes)
+// lives in localStorage and would otherwise leak between tests in the same file.
+beforeEach(() => {
+  window.localStorage.clear();
+  document.documentElement.lang = "en";
+});

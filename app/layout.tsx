@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "@/styles/globals.css";
 import { siteUrl } from "@/lib/site";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -88,8 +89,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="bg-background">
+    <html lang="en" suppressHydrationWarning className="bg-background">
       <body className={inter.className}>
+        <ThemeProvider>
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground"
@@ -103,6 +105,7 @@ export default function RootLayout({
         >
           {children}
         </main>
+        </ThemeProvider>
       </body>
     </html>
   );

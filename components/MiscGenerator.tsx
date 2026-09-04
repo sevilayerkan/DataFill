@@ -9,6 +9,7 @@ import { nameData as trNameData } from "@/data/tr/name-data"
 import { passwordData as enPasswordData } from "@/data/en/password-data"
 import { passwordData as trPasswordData } from "@/data/tr/password-data"
 import { generatePhoneNumber, getPhoneCountry, phoneCountries } from "@/data/phone-data"
+import { useTranslation } from "@/hooks/useTranslation"
 import {
   buildExportFilename,
   downloadTextFile,
@@ -50,87 +51,6 @@ type Props = {
   onCopy: (message: string) => void
   language: "en" | "tr"
 }
-
-const labels = {
-  en: {
-    select: "Select Data Type",
-    generate: "Generate",
-    copy: "Copy",
-    copied: "Copied to clipboard!",
-    fullName: "Full Name",
-    email: "Email",
-    address: "Address",
-    password: "Password",
-    phone: "Phone",
-    uuid: "UUID",
-    date: "Date",
-    tckn: "TCKN (TR ID)",
-    username: "Username",
-    count: "Count",
-    format: "Format",
-    country: "Country",
-    gender: "Gender",
-    man: "Man",
-    woman: "Woman",
-    unisex: "Unisex",
-    plainText: "Plain Text",
-    json: "JSON",
-    jsonWithId: "JSON with ID",
-    csv: "CSV",
-    csvWithId: "CSV with ID",
-    export: "Export",
-    exportFormat: "Export Format",
-    exportedJson: "Exported JSON file!",
-    exportedCsv: "Exported CSV file!",
-    passwordSource: "Password Source",
-    wordlist: "Wordlist",
-    fullyRandom: "Fully Random",
-    passwordLength: "Password Length",
-    lowercase: "Lowercase (a–z)",
-    uppercase: "Uppercase (A–Z)",
-    digits: "Digits (0–9)",
-    symbols: "Symbols (!@#…)",
-  },
-  tr: {
-    select: "Veri Türü Seçin",
-    generate: "Üret",
-    copy: "Kopyala",
-    copied: "Panoya kopyalandı!",
-    fullName: "Ad Soyad",
-    email: "E-posta",
-    address: "Adres",
-    password: "Şifre",
-    phone: "Telefon",
-    uuid: "UUID",
-    date: "Tarih",
-    tckn: "TCKN",
-    username: "Kullanıcı Adı",
-    count: "Adet",
-    format: "Biçim",
-    country: "Ülke",
-    gender: "Cinsiyet",
-    man: "Erkek",
-    woman: "Kadın",
-    unisex: "Unisex",
-    plainText: "Düz Metin",
-    json: "JSON",
-    jsonWithId: "ID ile JSON",
-    csv: "CSV",
-    csvWithId: "ID ile CSV",
-    export: "Dışa Aktar",
-    exportFormat: "Dışa Aktarma Formatı",
-    exportedJson: "JSON dosyası dışa aktarıldı!",
-    exportedCsv: "CSV dosyası dışa aktarıldı!",
-    passwordSource: "Şifre Kaynağı",
-    wordlist: "Kelime Listesi",
-    fullyRandom: "Tamamen Rastgele",
-    passwordLength: "Şifre Uzunluğu",
-    lowercase: "Küçük Harf (a–z)",
-    uppercase: "Büyük Harf (A–Z)",
-    digits: "Rakam (0–9)",
-    symbols: "Sembol (!@#…)",
-  },
-} as const
 
 /** Maximum items per batch (also the Count input's max). Output is capped at the pool size when a pool is smaller (e.g. single-gender en names). */
 const MAX_COUNT = 1000
@@ -314,7 +234,7 @@ function generateValue(type: Exclude<DataType, "fullName" | "date" | "password">
 }
 
 export function MiscGenerator({ onCopy, language }: Props) {
-  const copy = labels[language]
+  const { t } = useTranslation(language)
   const [type, setType] = useState<DataType>("fullName")
   const [count, setCount] = useState(1)
   const [format, setFormat] = useState<OutputFormat>("text")
@@ -387,7 +307,7 @@ export function MiscGenerator({ onCopy, language }: Props) {
   }
   const copyValue = async () => {
     await navigator.clipboard.writeText(value)
-    onCopy(copy.copied)
+    onCopy(t("miscCopied"))
   }
 
   const reformat = (nextFormat: OutputFormat) => {
@@ -405,14 +325,14 @@ export function MiscGenerator({ onCopy, language }: Props) {
       content,
       isJson ? "application/json" : "text/csv",
     )
-    onCopy(isJson ? copy.exportedJson : copy.exportedCsv)
+    onCopy(isJson ? t("miscExportedJson") : t("miscExportedCsv"))
   }
 
   return (
     <div className="space-y-4">
       <div className="grid gap-3 rounded-lg border bg-muted/20 p-3 sm:grid-cols-2">
         <label className="grid gap-1.5 text-sm font-medium">
-          <span>{copy.count}</span>
+          <span>{t("miscCount")}</span>
           <input
             className="h-10 rounded-md border bg-background px-3 font-normal outline-none focus:ring-2 focus:ring-ring"
             type="number"
@@ -424,17 +344,17 @@ export function MiscGenerator({ onCopy, language }: Props) {
           />
         </label>
         <label className="grid gap-1.5 text-sm font-medium">
-          <span>{copy.format}</span>
+          <span>{t("miscFormat")}</span>
           <Select value={format} onValueChange={(next) => {
         reformat(next as OutputFormat)
       }}>
-            <SelectTrigger aria-label={copy.format}><SelectValue /></SelectTrigger>
+            <SelectTrigger aria-label={t("miscFormat")}><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="text">{copy.plainText}</SelectItem>
-              <SelectItem value="json">{copy.json}</SelectItem>
-              <SelectItem value="jsonWithId">{copy.jsonWithId}</SelectItem>
-              <SelectItem value="csv">{copy.csv}</SelectItem>
-              <SelectItem value="csvWithId">{copy.csvWithId}</SelectItem>
+              <SelectItem value="text">{t("miscPlainText")}</SelectItem>
+              <SelectItem value="json">{t("miscJson")}</SelectItem>
+              <SelectItem value="jsonWithId">{t("miscJsonWithId")}</SelectItem>
+              <SelectItem value="csv">{t("miscCsv")}</SelectItem>
+              <SelectItem value="csvWithId">{t("miscCsvWithId")}</SelectItem>
             </SelectContent>
           </Select>
         </label>
@@ -444,34 +364,34 @@ export function MiscGenerator({ onCopy, language }: Props) {
         setType(nextType)
         generate(nextType, format)
       }}>
-        <SelectTrigger aria-label={copy.select}>
-          <SelectValue placeholder={copy.select} />
+        <SelectTrigger aria-label={t("miscSelectDataType")}>
+          <SelectValue placeholder={t("miscSelectDataType")} />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="fullName">{copy.fullName}</SelectItem>
-          <SelectItem value="email">{copy.email}</SelectItem>
-          <SelectItem value="address">{copy.address}</SelectItem>
-          <SelectItem value="password">{copy.password}</SelectItem>
-          <SelectItem value="phone">{copy.phone}</SelectItem>
-          <SelectItem value="uuid">{copy.uuid}</SelectItem>
-          <SelectItem value="date">{copy.date}</SelectItem>
-          <SelectItem value="tckn">{copy.tckn}</SelectItem>
-          <SelectItem value="username">{copy.username}</SelectItem>
+          <SelectItem value="fullName">{t("miscFullName")}</SelectItem>
+          <SelectItem value="email">{t("miscEmail")}</SelectItem>
+          <SelectItem value="address">{t("miscAddress")}</SelectItem>
+          <SelectItem value="password">{t("miscPassword")}</SelectItem>
+          <SelectItem value="phone">{t("miscPhone")}</SelectItem>
+          <SelectItem value="uuid">{t("miscUuid")}</SelectItem>
+          <SelectItem value="date">{t("miscDate")}</SelectItem>
+          <SelectItem value="tckn">{t("miscTckn")}</SelectItem>
+          <SelectItem value="username">{t("miscUsername")}</SelectItem>
         </SelectContent>
       </Select>
       {type === "fullName" && (
         <label className="grid gap-1.5 text-sm font-medium">
-          <span>{copy.gender}</span>
+          <span>{t("miscGender")}</span>
           <Select value={nameGender} onValueChange={(next) => {
             const nextGender = next as NameGender
             setNameGender(nextGender)
             generate("fullName", format, phoneCountryCode, nextGender)
           }}>
-            <SelectTrigger aria-label={copy.gender}><SelectValue /></SelectTrigger>
+            <SelectTrigger aria-label={t("miscGender")}><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="male">{copy.man}</SelectItem>
-              <SelectItem value="female">{copy.woman}</SelectItem>
-              <SelectItem value="unisex">{copy.unisex}</SelectItem>
+              <SelectItem value="male">{t("miscMan")}</SelectItem>
+              <SelectItem value="female">{t("miscWoman")}</SelectItem>
+              <SelectItem value="unisex">{t("miscUnisex")}</SelectItem>
             </SelectContent>
           </Select>
         </label>
@@ -479,23 +399,23 @@ export function MiscGenerator({ onCopy, language }: Props) {
       {type === "password" && (
         <div className="grid gap-3 rounded-lg border bg-muted/20 p-3">
           <label className="grid gap-1.5 text-sm font-medium">
-            <span>{copy.passwordSource}</span>
+            <span>{t("miscPasswordSource")}</span>
             <Select value={passwordSource} onValueChange={(next) => {
               const nextSource = next as PasswordSource
               setPasswordSource(nextSource)
               generate("password", format, phoneCountryCode, nameGender, nextSource, randomPasswordOptions)
             }}>
-              <SelectTrigger aria-label={copy.passwordSource}><SelectValue /></SelectTrigger>
+              <SelectTrigger aria-label={t("miscPasswordSource")}><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="wordlist">{copy.wordlist}</SelectItem>
-                <SelectItem value="random">{copy.fullyRandom}</SelectItem>
+                <SelectItem value="wordlist">{t("miscWordlist")}</SelectItem>
+                <SelectItem value="random">{t("miscFullyRandom")}</SelectItem>
               </SelectContent>
             </Select>
           </label>
           {passwordSource === "random" && (
             <>
               <label className="grid gap-1.5 text-sm font-medium">
-                <span>{copy.passwordLength}</span>
+                <span>{t("miscPasswordLength")}</span>
                 <input
                   className="h-10 rounded-md border bg-background px-3 font-normal outline-none focus:ring-2 focus:ring-ring"
                   type="number"
@@ -503,7 +423,7 @@ export function MiscGenerator({ onCopy, language }: Props) {
                   max={RANDOM_PASSWORD_MAX_LENGTH}
                   step={1}
                   value={randomPasswordOptions.length}
-                  aria-label={copy.passwordLength}
+                  aria-label={t("miscPasswordLength")}
                   onChange={(event) => {
                     const nextOptions = {
                       ...randomPasswordOptions,
@@ -517,10 +437,10 @@ export function MiscGenerator({ onCopy, language }: Props) {
               <div className="grid grid-cols-2 gap-2">
                 {(
                   [
-                    { key: "lowercase" as const, label: copy.lowercase },
-                    { key: "uppercase" as const, label: copy.uppercase },
-                    { key: "digits" as const, label: copy.digits },
-                    { key: "symbols" as const, label: copy.symbols },
+                    { key: "lowercase" as const, label: t("miscLowercase") },
+                    { key: "uppercase" as const, label: t("miscUppercase") },
+                    { key: "digits" as const, label: t("miscDigits") },
+                    { key: "symbols" as const, label: t("miscSymbols") },
                   ]
                 ).map((option) => (
                   <label key={option.key} className="flex items-center gap-2 text-sm font-normal">
@@ -548,12 +468,12 @@ export function MiscGenerator({ onCopy, language }: Props) {
       )}
       {type === "phone" && (
         <label className="grid gap-1.5 text-sm font-medium">
-          <span>{copy.country}</span>
+          <span>{t("miscCountry")}</span>
           <Select value={phoneCountryCode} onValueChange={(next) => {
             setPhoneCountryCode(next)
             generate("phone", format, next)
           }}>
-            <SelectTrigger aria-label={copy.country}><SelectValue /></SelectTrigger>
+            <SelectTrigger aria-label={t("miscCountry")}><SelectValue /></SelectTrigger>
             <SelectContent>
               {phoneCountries.map((c) => (
                 <SelectItem key={c.code} value={c.code}>
@@ -566,23 +486,23 @@ export function MiscGenerator({ onCopy, language }: Props) {
       )}
       <pre className="max-h-[400px] overflow-auto rounded-md border bg-muted/30 px-3 py-2 font-mono text-sm whitespace-pre-wrap break-all" aria-live="polite">{value}</pre>
       <div className="flex gap-2">
-        <Button type="button" onClick={() => generate()}>{copy.generate}</Button>
-        <Button type="button" variant="outline" onClick={copyValue}>{copy.copy}</Button>
+        <Button type="button" onClick={() => generate()}>{t("miscGenerate")}</Button>
+        <Button type="button" variant="outline" onClick={copyValue}>{t("miscCopy")}</Button>
       </div>
       <div className="grid gap-3 rounded-lg border bg-muted/20 p-3 sm:grid-cols-[1fr_auto] sm:items-end">
         <label className="grid gap-1.5 text-sm font-medium">
-          <span>{copy.exportFormat}</span>
+          <span>{t("miscExportFormat")}</span>
           <Select value={exportFormat} onValueChange={(next) => setExportFormat(next as ExportFormat)}>
-            <SelectTrigger aria-label={copy.exportFormat}><SelectValue /></SelectTrigger>
+            <SelectTrigger aria-label={t("miscExportFormat")}><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="json">{copy.json}</SelectItem>
-              <SelectItem value="jsonWithId">{copy.jsonWithId}</SelectItem>
-              <SelectItem value="csv">{copy.csv}</SelectItem>
-              <SelectItem value="csvWithId">{copy.csvWithId}</SelectItem>
+              <SelectItem value="json">{t("miscJson")}</SelectItem>
+              <SelectItem value="jsonWithId">{t("miscJsonWithId")}</SelectItem>
+              <SelectItem value="csv">{t("miscCsv")}</SelectItem>
+              <SelectItem value="csvWithId">{t("miscCsvWithId")}</SelectItem>
             </SelectContent>
           </Select>
         </label>
-        <Button type="button" variant="outline" onClick={exportFile}>{copy.export}</Button>
+        <Button type="button" variant="outline" onClick={exportFile}>{t("miscExport")}</Button>
       </div>
     </div>
   )
