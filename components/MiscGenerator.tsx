@@ -267,33 +267,33 @@ export function generateTCKN(rand?: RandomSource) {
 }
 
 /**
- * Name-linked, realistic e-mail local-parts per language (never
- * `user12345678@example.com`): `ad.soyad`, `adsoyad`, `ad_soyad`,
- * `asoyad`, `ad.s` + an optional short numeric suffix (max 4 digits).
+ * Shared persona identity: one folded `first`/`last` pair (ASCII, lowercase)
+ * plus the display name. Dataset rows reuse a single identity so `fullName`,
+ * `email` and `username` stay mutually consistent.
  */
-export function generateEmailAddress(language: "en" | "tr", rand?: RandomSource): string {
-  const pick = <T,>(pool: readonly T[]): T => pool[randomInt(pool.length, rand)];
-  if (language === "tr") {
-    const firstRaw = pick([...trNameData.maleNames, ...trNameData.femaleNames]);
-    const lastRaw = pick(trNameData.lastNames);
-    const first = foldTrLower(firstRaw);
-    const last = foldTrLower(lastRaw);
-    const style = randomInt(100, rand);
-    let local: string;
-    if (style < 35) local = `${first}.${last}`;
-    else if (style < 55) local = `${first}${last}`;
-    else if (style < 65) local = `${first}_${last}`;
-    else if (style < 75) local = `${first[0]}${last}`;
-    else if (style < 85) local = `${first}.${last[0]}`;
-    else local = `${first}-${last}`;
-    const suffixRoll = randomInt(100, rand);
-    if (suffixRoll >= 50) local += randomDigits(suffixRoll >= 80 ? 3 : 2, rand);
-    return `${local}@${pick(trEmailData.domains)}`;
+export interface PersonaIdentity {
+  /** Display name with original casing, e.g. `Ahmet Yılmaz`. */
+  display: string
+  /** Folded, lowercase first name (TR chars folded), e.g. `ahmet`. */
+  first: string
+  /** Folded, lowercase last name, e.g. `yilmaz`. */
+  last: string
+}
+
+export function pickPersonaIdentity(language: "en" | "tr", rand?: RandomSource): PersonaIdentity {
+  const isTr = language === "tr"
+  const data = isTr ? trNameData : enNameData
+  const firstRaw = data.maleNames.concat(data.femaleNames)[randomInt(data.maleNames.length + data.femaleNames.length, rand)]
+  const lastRaw = data.lastNames[randomInt(data.lastNames.length, rand)]
+  return {
+    display: `${firstRaw} ${lastRaw}`,
+    first: isTr ? foldTrLower(firstRaw) : firstRaw.toLowerCase(),
+    last: isTr ? foldTrLower(lastRaw) : lastRaw.toLowerCase(),
   }
-  const firstRaw = pick([...enNameData.maleNames, ...enNameData.femaleNames]);
-  const lastRaw = pick(enNameData.lastNames);
-  const first = firstRaw.toLowerCase();
-  const last = lastRaw.toLowerCase();
+}
+
+/** E-mail local-part from an already-folded identity (`ad.soyad`, `adsoyad`, …). */
+export function buildEmailLocal(first: string, last: string, rand?: RandomSource): string {
   const style = randomInt(100, rand);
   let local: string;
   if (style < 35) local = `${first}.${last}`;
@@ -304,7 +304,36 @@ export function generateEmailAddress(language: "en" | "tr", rand?: RandomSource)
   else local = `${first}-${last}`;
   const suffixRoll = randomInt(100, rand);
   if (suffixRoll >= 50) local += randomDigits(suffixRoll >= 80 ? 3 : 2, rand);
-  return `${local}@${pick(enEmailData.domains)}`;
+  return local;
+}
+
+/** Username handle from an already-folded identity (`adsoyad`, `ad.soyad`, …). */
+export function buildUsernameHandle(first: string, last: string, rand?: RandomSource): string {
+  const style = randomInt(100, rand);
+  let handle: string;
+  if (style < 30) handle = `${first}${last}`;
+  else if (style < 50) handle = `${first}.${last}`;
+  else if (style < 65) handle = `${first}_${last}`;
+  else if (style < 75) handle = `${first}-${last}`;
+  else if (style < 85) handle = `${first[0]}${last}`;
+  else if (style < 93) handle = `${first}${last[0]}`;
+  else handle = `${first[0]}_${last}`;
+  const suffixRoll = randomInt(100, rand);
+  if (suffixRoll >= 40) handle += randomDigits(suffixRoll >= 85 ? 4 : suffixRoll >= 60 ? 3 : 2, rand);
+  return handle;
+}
+
+/**
+ * Name-linked, realistic e-mail local-parts per language (never
+ * `user12345678@example.com`): `ad.soyad`, `adsoyad`, `ad_soyad`,
+ * `asoyad`, `ad.s` + an optional short numeric suffix (max 4 digits).
+ */
+export function generateEmailAddress(language: "en" | "tr", rand?: RandomSource): string {
+  const pick = <T,>(pool: readonly T[]): T => pool[randomInt(pool.length, rand)];
+  const identity = pickPersonaIdentity(language, rand);
+  const local = buildEmailLocal(identity.first, identity.last, rand);
+  const domains = language === "tr" ? trEmailData.domains : enEmailData.domains;
+  return `${local}@${pick(domains)}`;
 }
 
 /** Language-aware address: TR picks a full `mahalle/ilçe/il` address, EN builds a US one. */
@@ -341,25 +370,8 @@ export function generatePhoneValue(phoneCountryCode: string, rand?: RandomSource
  * suffix (max 4 digits). ASCII-only: TR names are folded.
  */
 export function generateUsername(language: "en" | "tr", rand?: RandomSource): string {
-  const pick = <T,>(pool: readonly T[]): T => pool[randomInt(pool.length, rand)];
-  const isTr = language === "tr";
-  const data = isTr ? trNameData : enNameData;
-  const firstRaw = pick([...data.maleNames, ...data.femaleNames]);
-  const lastRaw = pick(data.lastNames);
-  const first = isTr ? foldTrLower(firstRaw) : firstRaw.toLowerCase();
-  const last = isTr ? foldTrLower(lastRaw) : lastRaw.toLowerCase();
-  const style = randomInt(100, rand);
-  let handle: string;
-  if (style < 30) handle = `${first}${last}`;
-  else if (style < 50) handle = `${first}.${last}`;
-  else if (style < 65) handle = `${first}_${last}`;
-  else if (style < 75) handle = `${first}-${last}`;
-  else if (style < 85) handle = `${first[0]}${last}`;
-  else if (style < 93) handle = `${first}${last[0]}`;
-  else handle = `${first[0]}_${last}`;
-  const suffixRoll = randomInt(100, rand);
-  if (suffixRoll >= 40) handle += randomDigits(suffixRoll >= 85 ? 4 : suffixRoll >= 60 ? 3 : 2, rand);
-  return handle;
+  const identity = pickPersonaIdentity(language, rand);
+  return buildUsernameHandle(identity.first, identity.last, rand);
 }
 
 function generateValue(

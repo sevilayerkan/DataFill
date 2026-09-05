@@ -30,7 +30,7 @@ export function formatCsv(rows: ExportRow[], withId: boolean): string {
   return lines.join("\n")
 }
 
-export function buildExportFilename(base: string, ext: "json" | "csv"): string {
+export function buildExportFilename(base: string, ext: "json" | "csv" | "sql"): string {
   const safeBase = base.replace(/[^a-z0-9-_]+/gi, "-").replace(/^-+|-+$/g, "") || "export"
   return `${safeBase}.${ext}`
 }

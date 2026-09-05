@@ -11,6 +11,7 @@ import { Moon, Sun, Coffee, Github, Settings, Check } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Checkbox } from "@/components/ui/checkbox"
 import { MiscGenerator } from "./MiscGenerator"
+import { DatasetBuilder } from "./DatasetBuilder"
 import { useTranslation } from "@/hooks/useTranslation"
 import { LOREM_MAX_LENGTH, LOREM_MIN_LENGTH, clampLoremLength, generateLoremText } from "@/lib/lorem"
 import { getTextStats } from "@/lib/text-stats"
@@ -37,7 +38,7 @@ export default function FadelyTextUI() {
   const [removeSpaces, setRemoveSpaces] = useState(false)
   const [removeSpecialChars, setRemoveSpecialChars] = useState(false)
   const [language, setLanguage] = useState<"en" | "tr">("en")
-  const [activeTab, setActiveTab] = useState<"generate" | "counter" | "misc">("generate")
+  const [activeTab, setActiveTab] = useState<"generate" | "counter" | "misc" | "dataset">("generate")
   const [settingsOpen, setSettingsOpen] = useState(false)
   const settingsRef = useRef<HTMLDivElement>(null)
   const { t } = useTranslation(language)
@@ -169,6 +170,7 @@ export default function FadelyTextUI() {
           <button type="button" onClick={() => setActiveTab("generate")} className="rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground">{t("generate")}</button>
           <button type="button" onClick={() => setActiveTab("counter")} className="rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground">{t("counter")}</button>
           <button type="button" onClick={() => setActiveTab("misc")} className="rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground">{t("misc")}</button>
+          <button type="button" onClick={() => setActiveTab("dataset")} className="rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground">{t("dataset")}</button>
         </nav>
         <div className="flex items-center gap-2">
           <Sun className="h-4 w-4" />
@@ -326,6 +328,11 @@ export default function FadelyTextUI() {
         <TabsContent value="misc" className="space-y-4">
           <MiscGenerator onCopy={showNotificationMessage} language={language} />
         </TabsContent>
+        {activeTab === "dataset" && (
+          <div className="mt-2 space-y-4">
+            <DatasetBuilder onCopy={showNotificationMessage} language={language} />
+          </div>
+        )}
       </Tabs>
       <footer className="mt-6 flex items-center justify-between border-t pt-3 text-xs text-muted-foreground">
         <span>FadelyText v1.0</span>

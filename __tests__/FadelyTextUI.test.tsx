@@ -49,6 +49,15 @@ describe("FadelyTextUI", () => {
     expect(textArea).toHaveFocus()
   })
 
+  it("opens the dataset builder from the header nav without a fourth tab", () => {
+    render(<FadelyTextUI />)
+    fireEvent.click(screen.getByRole("button", { name: "Dataset" }))
+
+    expect(screen.getByText("Fields")).toBeInTheDocument()
+    // The tab strip itself stays at three tabs: dataset lives only in the header nav.
+    expect(screen.getAllByRole("tab")).toHaveLength(3)
+  })
+
   it("keeps the last size when the character input is cleared", () => {
     render(<FadelyTextUI />)
     const characterInput = screen.getByLabelText("Characters:") as HTMLInputElement
