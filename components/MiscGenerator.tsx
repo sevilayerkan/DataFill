@@ -10,6 +10,7 @@ import { passwordData as enPasswordData } from "@/data/en/password-data"
 import { passwordData as trPasswordData } from "@/data/tr/password-data"
 import { generatePhoneNumber, getPhoneCountry, phoneCountries } from "@/data/phone-data"
 import { copyTextToClipboard } from "@/lib/clipboard"
+import { parseNumericDraft } from "@/lib/numeric-input"
 import { randomInt, randomUUID, type RandomSource } from "@/lib/random"
 import { useTranslation } from "@/hooks/useTranslation"
 import {
@@ -231,6 +232,9 @@ export function MiscGenerator({ onCopy, language }: Props) {
   const { t } = useTranslation(language)
   const [type, setType] = useState<DataType>("fullName")
   const [count, setCount] = useState(1)
+  // Raw input draft: clearing the field must not push 0/NaN into state.
+  // Committed (clamped) on blur/Generate instead.
+  const [countDraft, setCountDraft] = useState("1")
   const [format, setFormat] = useState<OutputFormat>("text")
   const [phoneCountryCode, setPhoneCountryCode] = useState("US")
   const [nameGender, setNameGender] = useState<NameGender>("unisex")
@@ -239,6 +243,9 @@ export function MiscGenerator({ onCopy, language }: Props) {
   const [randomPasswordOptions, setRandomPasswordOptions] = useState<RandomPasswordOptions>(
     DEFAULT_RANDOM_PASSWORD_OPTIONS,
   )
+  // Raw length draft: clearing the field must not snap the value to the min.
+  // Committed (clamped) on blur; valid keystrokes regenerate live.
+  const [passwordLengthDraft, setPasswordLengthDraft] = useState(String(DEFAULT_RANDOM_PASSWORD_OPTIONS.length))
   const [exportRows, setExportRows] = useState<ExportRow[]>([])
   const [value, setValue] = useState("")
 
@@ -261,6 +268,20 @@ export function MiscGenerator({ onCopy, language }: Props) {
     return rows.map((row) => row.value).join("\n")
   }
 
+  /** Normalize the count draft into state; returns the effective count. */
+  const commitCount = (): number => {
+    const parsed = parseNumericDraft(countDraft)
+    if (parsed === null) {
+      // Empty/invalid: keep editing, revert the field to the last good value.
+      setCountDraft(String(count))
+      return count
+    }
+    const safeCount = Math.min(MAX_COUNT, Math.max(1, Math.floor(parsed)))
+    setCount(safeCount)
+    setCountDraft(String(safeCount))
+    return safeCount
+  }
+
   const generate = (
     nextType = type,
     nextFormat = format,
@@ -269,8 +290,7 @@ export function MiscGenerator({ onCopy, language }: Props) {
     nextPasswordSource = passwordSource,
     nextRandomPasswordOptions = randomPasswordOptions,
   ) => {
-    const safeCount = Math.min(MAX_COUNT, Math.max(1, Math.floor(count) || 1))
-    setCount(safeCount)
+    const safeCount = commitCount()
     let values: string[]
     if (nextType === "fullName") {
       // Finite pool sampled without replacement:
@@ -342,8 +362,11 @@ export function MiscGenerator({ onCopy, language }: Props) {
             min={1}
             max={MAX_COUNT}
             step={1}
-            value={count}
-            onChange={(event) => setCount(Math.min(MAX_COUNT, Math.max(1, Number(event.target.value) || 1)))}
+            value={countDraft}
+            onChange={(event) => setCountDraft(event.target.value)}
+            onBlur={() => {
+              commitCount()
+            }}
           />
         </label>
         <label className="grid gap-1.5 text-sm font-medium">
@@ -425,15 +448,32 @@ export function MiscGenerator({ onCopy, language }: Props) {
                   min={RANDOM_PASSWORD_MIN_LENGTH}
                   max={RANDOM_PASSWORD_MAX_LENGTH}
                   step={1}
-                  value={randomPasswordOptions.length}
+                  value={passwordLengthDraft}
                   aria-label={t("miscPasswordLength")}
                   onChange={(event) => {
+                    const raw = event.target.value
+                    setPasswordLengthDraft(raw)
+                    const parsed = parseNumericDraft(raw)
+                    if (parsed === null) return // Empty/partial: keep editing.
                     const nextOptions = {
                       ...randomPasswordOptions,
-                      length: clampPasswordLength(Number(event.target.value)),
+                      length: clampPasswordLength(parsed),
                     }
                     setRandomPasswordOptions(nextOptions)
                     generate("password", format, phoneCountryCode, nameGender, "random", nextOptions)
+                  }}
+                  onBlur={() => {
+                    const parsed = parseNumericDraft(passwordLengthDraft)
+                    if (parsed === null) {
+                      setPasswordLengthDraft(String(randomPasswordOptions.length))
+                      return
+                    }
+                    const nextOptions = {
+                      ...randomPasswordOptions,
+                      length: clampPasswordLength(parsed),
+                    }
+                    setRandomPasswordOptions(nextOptions)
+                    setPasswordLengthDraft(String(nextOptions.length))
                   }}
                 />
               </label>

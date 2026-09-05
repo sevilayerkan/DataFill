@@ -1,8 +1,6 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -15,6 +13,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { MiscGenerator } from "./MiscGenerator"
 import { useTranslation } from "@/hooks/useTranslation"
 import { LOREM_MAX_LENGTH, LOREM_MIN_LENGTH, clampLoremLength, generateLoremText } from "@/lib/lorem"
+import { getTextStats } from "@/lib/text-stats"
+import { parseNumericDraft } from "@/lib/numeric-input"
 import { copyTextToClipboard } from "@/lib/clipboard"
 import { useTheme } from "next-themes"
 
@@ -24,10 +24,13 @@ export default function FadelyTextUI() {
   const { theme, setTheme, resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const [generatedText, setGeneratedText] = useState("")
-  const [characterCount, setCharacterCount] = useState(0)
-  const [wordCount, setWordCount] = useState(0)
-  const [lineCount, setLineCount] = useState(0)
+  const [counterText, setCounterText] = useState("")
+  const counterRef = useRef<HTMLTextAreaElement>(null)
+  const counterStats = useMemo(() => getTextStats(counterText), [counterText])
   const [characterSize, setCharacterSize] = useState(100)
+  // Raw input draft: clearing the field or typing a partial value must not
+  // push 0/NaN into state. Committed (clamped) on blur/Generate instead.
+  const [characterSizeDraft, setCharacterSizeDraft] = useState("100")
   const [loremMaxWarning, setLoremMaxWarning] = useState(false)
   const [showNotification, setShowNotification] = useState(false)
   const [notificationMessage, setNotificationMessage] = useState("")
@@ -94,26 +97,37 @@ export default function FadelyTextUI() {
     setTheme(current === "dark" ? "light" : "dark")
   }
 
-  const generateText = () => {
-    if (characterSize > LOREM_MAX_LENGTH) {
+  /** Normalize the size draft into state; returns the effective size. */
+  const commitCharacterSize = (): number => {
+    const parsed = parseNumericDraft(characterSizeDraft)
+    if (parsed === null) {
+      // Empty/invalid: keep editing, revert the field to the last good value.
+      setCharacterSizeDraft(String(characterSize))
+      setLoremMaxWarning(false)
+      return characterSize
+    }
+    if (parsed > LOREM_MAX_LENGTH) {
       // Over the limit: warn instead of silently clamping, then generate at the max.
       setLoremMaxWarning(true)
       setCharacterSize(LOREM_MAX_LENGTH)
-      setGeneratedText(generateLoremText(LOREM_MAX_LENGTH, { removeSpaces, removeSpecialChars }))
-      return
+      setCharacterSizeDraft(String(LOREM_MAX_LENGTH))
+      return LOREM_MAX_LENGTH
     }
-    setLoremMaxWarning(false)
-    const size = clampLoremLength(characterSize)
+    const size = clampLoremLength(parsed)
     // Keep the control in sync when it held an out-of-range value.
+    setLoremMaxWarning(false)
     setCharacterSize(size)
-    setGeneratedText(generateLoremText(size, { removeSpaces, removeSpecialChars }))
+    setCharacterSizeDraft(String(size))
+    return size
   }
 
-  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const text = e.target.value
-    setCharacterCount(text.length)
-    setWordCount(text.trim().split(/\s+/).filter(Boolean).length)
-    setLineCount(text.length > 0 ? text.split(/\r\n|\r|\n/).length : 0)
+  const generateText = () => {
+    setGeneratedText(generateLoremText(commitCharacterSize(), { removeSpaces, removeSpecialChars }))
+  }
+
+  const clearCounter = () => {
+    setCounterText("")
+    counterRef.current?.focus()
   }
 
   const copyToClipboard = async (text: string) => {
@@ -219,11 +233,15 @@ export default function FadelyTextUI() {
               min={LOREM_MIN_LENGTH}
               max={LOREM_MAX_LENGTH}
               step={1}
-              value={characterSize}
+              value={characterSizeDraft}
               onChange={(e) => {
-                const raw = Number(e.target.value)
-                setCharacterSize(raw)
-                setLoremMaxWarning(raw > LOREM_MAX_LENGTH)
+                const raw = e.target.value
+                setCharacterSizeDraft(raw)
+                const parsed = parseNumericDraft(raw)
+                setLoremMaxWarning(parsed !== null && parsed > LOREM_MAX_LENGTH)
+              }}
+              onBlur={() => {
+                commitCharacterSize()
               }}
               className="w-20"
             />
@@ -268,24 +286,20 @@ export default function FadelyTextUI() {
           </Button>
         </TabsContent>
         <TabsContent value="counter" className="space-y-4">
-          <Textarea onChange={handleTextChange} placeholder={t("typeOrPastePlaceholder")} className="h-[200px]" />
+          <Textarea
+            ref={counterRef}
+            value={counterText}
+            onChange={(e) => setCounterText(e.target.value)}
+            placeholder={t("typeOrPastePlaceholder")}
+            className="h-[200px]"
+          />
           <div className="text-center text-lg font-semibold">
-            {`${t("charactersCount", { count: characterCount })} | ${t("wordsCount", { count: wordCount })} | ${t(
+            {`${t("charactersCount", { count: counterStats.characters })} | ${t("wordsCount", { count: counterStats.words })} | ${t(
               "linesCount",
-              { count: lineCount > 0 ? lineCount : "-" },
+              { count: counterStats.lines > 0 ? counterStats.lines : "-" },
             )}`}
           </div>
-          <Button
-            variant="outline"
-            className="w-full bg-transparent"
-            onClick={() => {
-              const textarea = document.querySelector("textarea") as HTMLTextAreaElement
-              if (textarea) {
-                textarea.value = ""
-                handleTextChange({ target: textarea } as React.ChangeEvent<HTMLTextAreaElement>)
-              }
-            }}
-          >
+          <Button variant="outline" className="w-full bg-transparent" onClick={clearCounter}>
             {t("clearText")}
           </Button>
           <div className="flex justify-between items-center mt-4">

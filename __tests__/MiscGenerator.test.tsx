@@ -69,6 +69,20 @@ describe("MiscGenerator", () => {
     expect(lines).toHaveLength(1000)
     expect(new Set(lines).size).toBe(1000)
   })
+
+  it("keeps the last count when the count input is cleared", () => {
+    render(<MiscGenerator onCopy={vi.fn()} language="en" />)
+    const countInput = screen.getByRole("spinbutton") as HTMLInputElement
+
+    // Clearing the field must not push 0/NaN into state: Generate falls back
+    // to the last committed count and restores the field.
+    fireEvent.change(countInput, { target: { value: "" } })
+    expect(countInput.value).toBe("")
+    fireEvent.click(screen.getByRole("button", { name: "Generate" }))
+
+    expect(getOutputLines()).toHaveLength(1)
+    expect(countInput.value).toBe("1")
+  })
 })
 
 describe("MiscGenerator name gender selection", () => {
