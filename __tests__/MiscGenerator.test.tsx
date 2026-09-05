@@ -1,7 +1,7 @@
-import { describe, it, expect, vi } from "vitest"
+import { describe, it, expect, vi, beforeEach } from "vitest"
 import { render, screen, fireEvent } from "@testing-library/react"
 import "@testing-library/jest-dom"
-import { MiscGenerator, datePool, fullNamePool, takeUnique } from "../components/MiscGenerator"
+import { MiscGenerator, datePool, fullNamePool, takeUnique, parseMiscUrlParams, buildMiscUrlParams, buildMiscValues } from "../components/MiscGenerator"
 import { nameData as enNameData } from "../data/en/name-data"
 import { nameData as trNameData } from "../data/tr/name-data"
 
@@ -11,6 +11,12 @@ function getOutputLines(): string[] {
 }
 
 describe("MiscGenerator", () => {
+  beforeEach(() => {
+    // generate() syncs settings into the address bar (share links):
+    // reset it so URL-restored state never leaks between tests.
+    window.history.replaceState(null, "", "/")
+  })
+
   it("does not mangle values when count exceeds the pool size", () => {
     render(<MiscGenerator onCopy={vi.fn()} language="en" />)
     fireEvent.change(screen.getByRole("spinbutton"), { target: { value: "5" } })
@@ -157,6 +163,105 @@ describe("MiscGenerator name gender selection", () => {
     expect(lines).toHaveLength(10)
     for (const line of lines) {
       expect(enNameData.femaleNames).toContain(line.split(" ")[0])
+    }
+  })
+})
+
+describe("MiscGenerator share links", () => {
+  beforeEach(() => {
+    window.history.replaceState(null, "", "/")
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText: vi.fn() },
+      configurable: true,
+    })
+  })
+
+  it("parses a full share query and ignores invalid values", () => {
+    expect(parseMiscUrlParams("?type=email&count=10&country=TR&format=json&gender=male")).toEqual({
+      type: "email",
+      count: 10,
+      format: "json",
+      phoneCountryCode: "TR",
+      nameGender: "male",
+    })
+    expect(parseMiscUrlParams("?type=nope&count=abc&country=XX&format=nope&gender=nope")).toEqual({})
+    expect(parseMiscUrlParams("?count=0")).toEqual({ count: 1 })
+    expect(parseMiscUrlParams("?count=5000")).toEqual({ count: 1000 })
+    expect(parseMiscUrlParams("")).toEqual({})
+  })
+
+  it("round-trips settings through build and parse", () => {
+    const nameState = { type: "fullName" as const, count: 7, format: "csv" as const, phoneCountryCode: "DE", nameGender: "female" as const }
+    expect(parseMiscUrlParams(buildMiscUrlParams(nameState))).toEqual(nameState)
+    // Non-name types drop gender when building, so only shared keys round-trip.
+    const phoneParams = buildMiscUrlParams({ ...nameState, type: "phone" })
+    expect(parseMiscUrlParams(phoneParams)).toEqual({
+      type: "phone",
+      count: 7,
+      format: "csv",
+      phoneCountryCode: "DE",
+    })
+  })
+
+  it("omits gender from the link unless generating names", () => {
+    const phone = buildMiscUrlParams({ type: "tckn", count: 1, format: "text", phoneCountryCode: "TR", nameGender: "unisex" })
+    expect(phone).toBe("?type=tckn&count=1&format=text&country=TR")
+    expect(phone).not.toContain("gender")
+    const names = buildMiscUrlParams({ type: "fullName", count: 1, format: "text", phoneCountryCode: "TR", nameGender: "male" })
+    expect(names).toContain("gender=male")
+  })
+
+  it("restores settings from the URL on mount", () => {
+    window.history.replaceState(null, "", "/?type=uuid&count=3")
+    render(<MiscGenerator onCopy={vi.fn()} language="en" />)
+
+    const lines = getOutputLines()
+    expect(lines).toHaveLength(3)
+    for (const line of lines) {
+      expect(line).toMatch(/^[0-9a-f-]{36}$/)
+    }
+  })
+
+  it("syncs the address bar on generate and shares the link", async () => {
+    const onCopy = vi.fn()
+    render(<MiscGenerator onCopy={onCopy} language="en" />)
+    fireEvent.click(screen.getByRole("button", { name: "Generate" }))
+
+    expect(window.location.search).toContain("type=fullName")
+    expect(window.location.search).toContain("count=1")
+
+    fireEvent.click(screen.getByRole("button", { name: "Share" }))
+    await vi.waitFor(() => expect(onCopy).toHaveBeenCalledWith("Link copied to clipboard!"))
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(window.location.href)
+  })
+
+  it("copies a single line without touching the rest", async () => {
+    const onCopy = vi.fn()
+    render(<MiscGenerator onCopy={onCopy} language="en" />)
+    fireEvent.change(screen.getByRole("spinbutton"), { target: { value: "3" } })
+    fireEvent.click(screen.getByRole("button", { name: "Generate" }))
+
+    const lines = getOutputLines()
+    expect(lines).toHaveLength(3)
+    fireEvent.click(screen.getByRole("button", { name: "Copy line 2" }))
+
+    await vi.waitFor(() => expect(onCopy).toHaveBeenCalledWith("Copied to clipboard!"))
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(lines[1])
+  })
+
+  it("builds values purely for every type", () => {
+    const values = buildMiscValues({
+      type: "email",
+      count: 5,
+      language: "tr",
+      phoneCountryCode: "TR",
+      nameGender: "unisex",
+      passwordSource: "wordlist",
+      randomPasswordOptions: { length: 16, lowercase: true, uppercase: true, digits: true, symbols: true },
+    })
+    expect(values).toHaveLength(5)
+    for (const value of values) {
+      expect(value).toMatch(/@/)
     }
   })
 })

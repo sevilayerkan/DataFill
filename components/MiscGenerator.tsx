@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import { Copy, Share2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -374,6 +375,120 @@ export function generateUsername(language: "en" | "tr", rand?: RandomSource): st
   return buildUsernameHandle(identity.first, identity.last, rand);
 }
 
+/**
+ * Shareable generator settings, e.g. `?type=email&count=10&country=TR`.
+ * `parseMiscUrlParams` validates and ignores anything unknown;
+ * `buildMiscUrlParams` renders the canonical query string.
+ */
+export interface MiscShareState {
+  type: DataType
+  count: number
+  format: OutputFormat
+  phoneCountryCode: string
+  nameGender: NameGender
+}
+
+const SHARE_TYPES: readonly string[] = ["fullName", "email", "address", "password", "phone", "uuid", "date", "tckn", "iban", "vkn", "plate", "username"]
+const SHARE_FORMATS: readonly string[] = ["text", "json", "jsonWithId", "csv", "csvWithId"]
+const SHARE_GENDERS: readonly string[] = ["male", "female", "unisex"]
+
+export function parseMiscUrlParams(search: string): Partial<MiscShareState> {
+  const params = new URLSearchParams(search)
+  const parsed: Partial<MiscShareState> = {}
+  const type = params.get("type")
+  if (type && (SHARE_TYPES as readonly string[]).includes(type)) parsed.type = type as DataType
+  const countRaw = params.get("count")
+  if (countRaw !== null) {
+    const count = Math.floor(Number(countRaw))
+    if (Number.isFinite(count)) parsed.count = Math.min(MAX_COUNT, Math.max(1, count))
+  }
+  const format = params.get("format")
+  if (format && (SHARE_FORMATS as readonly string[]).includes(format)) parsed.format = format as OutputFormat
+  const country = params.get("country")
+  if (country && phoneCountries.some((c) => c.code === country)) parsed.phoneCountryCode = country
+  const gender = params.get("gender")
+  if (gender && (SHARE_GENDERS as readonly string[]).includes(gender)) parsed.nameGender = gender as NameGender
+  return parsed
+}
+
+export function buildMiscUrlParams(state: MiscShareState): string {
+  const params = new URLSearchParams()
+  params.set("type", state.type)
+  params.set("count", String(state.count))
+  params.set("format", state.format)
+  params.set("country", state.phoneCountryCode)
+  // Gender only shapes full-name output: keep unrelated links clean.
+  if (state.type === "fullName") params.set("gender", state.nameGender)
+  return `?${params.toString()}`
+}
+
+/** Reflect the current generator settings in the address bar (no reload). */
+export function syncShareUrl(state: MiscShareState): void {
+  try {
+    window.history.replaceState(null, "", `${window.location.pathname}${buildMiscUrlParams(state)}`)
+  } catch {
+    // Non-browser or restricted contexts (SSR, some tests): sharing is a no-op.
+  }
+}
+
+export interface BuildMiscValuesOptions {
+  type: DataType
+  count: number
+  language: "en" | "tr"
+  phoneCountryCode: string
+  nameGender: NameGender
+  passwordSource: PasswordSource
+  randomPasswordOptions: RandomPasswordOptions
+}
+
+/** Pure value construction shared by interactive generate and URL-restored init. */
+export function buildMiscValues(options: BuildMiscValuesOptions, rand?: RandomSource): string[] {
+  const { type, count, language, phoneCountryCode, nameGender, passwordSource, randomPasswordOptions } = options
+  const safeCount = Math.min(MAX_COUNT, Math.max(1, Math.floor(count) || 1))
+  if (type === "fullName") {
+    // Finite pool sampled without replacement:
+    // uniqueness is structurally guaranteed for any reachable count.
+    return takeUnique(fullNamePool(language, nameGender), safeCount, rand)
+  }
+  if (type === "date") {
+    // Finite 2000-day pool sampled without replacement.
+    return takeUnique(datePool(), safeCount, rand)
+  }
+  if (type === "password") {
+    if (passwordSource === "random") {
+      // Fully random: pure charset sampling, no words, language-independent.
+      return generateRandomPasswords(safeCount, randomPasswordOptions, rand)
+    }
+    // Dile göre küratörlü havuzdan tekrarsız; havuz aşımında türevlerle tamamlanır.
+    return uniquePasswords(safeCount, language, rand)
+  }
+  // Effectively infinite spaces (2^122 UUIDs, large email/address spaces, ...):
+  // retry-with-set makes collisions practically impossible.
+  const seen = new Set<string>()
+  const values: string[] = []
+  let attempts = 0
+  while (values.length < safeCount && attempts < safeCount * 20 + 20) {
+    attempts += 1
+    const candidate = generateValue(type, language, phoneCountryCode, rand)
+    if (seen.has(candidate)) continue
+    seen.add(candidate)
+    values.push(candidate)
+  }
+  while (values.length < safeCount) {
+    values.push(generateValue(type, language, phoneCountryCode, rand))
+  }
+  return values
+}
+
+/** Pure row formatting shared by generate, reformat and URL-restored init. */
+export function formatMiscRows(rows: ExportRow[], outputFormat: OutputFormat): string {
+  if (outputFormat === "json") return formatJson(rows, false)
+  if (outputFormat === "jsonWithId") return formatJson(rows, true)
+  if (outputFormat === "csv") return formatCsv(rows, false)
+  if (outputFormat === "csvWithId") return formatCsv(rows, true)
+  return rows.map((row) => row.value).join("\n")
+}
+
 function generateValue(
   type: Exclude<DataType, "fullName" | "date" | "password">,
   language: "en" | "tr",
@@ -414,33 +529,51 @@ export function MiscGenerator({ onCopy, language }: Props) {
   const [exportRows, setExportRows] = useState<ExportRow[]>([])
   const [value, setValue] = useState("")
 
+  // Keep the phone default aligned with the UI language until the user
+  // picks a country explicitly (or opens a share link pinning one).
+  const countryTouched = useRef(false)
+
   // Row ids/values need client-side randomness: populate after mount so the
   // SSR/prerender output stays deterministic and hydration matches.
+  // A share link (`?type=email&count=10&country=TR`) restores the settings here.
   useEffect(() => {
-    const rows: ExportRow[] = [{ id: randomUUID(), value: takeUnique(fullNamePool(language), 1)[0] }]
+    const params = parseMiscUrlParams(window.location.search)
+    const effType = params.type ?? "fullName"
+    const effFormat = params.format ?? "text"
+    const effCountry = params.phoneCountryCode ?? (language === "tr" ? "TR" : "US")
+    const effGender = params.nameGender ?? "unisex"
+    const effCount = params.count ?? 1
     // eslint-disable-next-line react-hooks/set-state-in-effect
+    setType(effType)
+    setFormat(effFormat)
+    setPhoneCountryCode(effCountry)
+    setNameGender(effGender)
+    setCount(effCount)
+    setCountDraft(String(effCount))
+    if (params.phoneCountryCode) countryTouched.current = true
+    const rows: ExportRow[] = buildMiscValues({
+      type: effType,
+      count: effCount,
+      language,
+      phoneCountryCode: effCountry,
+      nameGender: effGender,
+      passwordSource: "wordlist",
+      randomPasswordOptions: DEFAULT_RANDOM_PASSWORD_OPTIONS,
+    }).map((item) => ({ id: randomUUID(), value: item }))
     setExportRows(rows)
-    setValue(rows.map((row) => row.value).join("\n"))
+    setValue(formatMiscRows(rows, effFormat))
     // Initial language only; later changes apply on the next generate.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Keep the phone default aligned with the UI language until the user
-  // picks a country explicitly.
-  const countryTouched = useRef(false)
+  // picks a country explicitly (or opens a share link pinning one).
+  // Runs after the init effect above, which marks URL-pinned countries touched.
   useEffect(() => {
     if (!countryTouched.current) {
       setPhoneCountryCode(language === "tr" ? "TR" : "US")
     }
   }, [language])
-
-  const formatRows = (rows: ExportRow[], outputFormat: OutputFormat) => {
-    if (outputFormat === "json") return formatJson(rows, false)
-    if (outputFormat === "jsonWithId") return formatJson(rows, true)
-    if (outputFormat === "csv") return formatCsv(rows, false)
-    if (outputFormat === "csvWithId") return formatCsv(rows, true)
-    return rows.map((row) => row.value).join("\n")
-  }
 
   /** Normalize the count draft into state; returns the effective count. */
   const commitCount = (): number => {
@@ -465,51 +598,42 @@ export function MiscGenerator({ onCopy, language }: Props) {
     nextRandomPasswordOptions = randomPasswordOptions,
   ) => {
     const safeCount = commitCount()
-    let values: string[]
-    if (nextType === "fullName") {
-      // Finite pool sampled without replacement:
-      // uniqueness is structurally guaranteed for any reachable count.
-      values = takeUnique(fullNamePool(language, nextNameGender), safeCount)
-    } else if (nextType === "date") {
-      // Finite 2000-day pool sampled without replacement.
-      values = takeUnique(datePool(), safeCount)
-    } else if (nextType === "password") {
-      if (nextPasswordSource === "random") {
-        // Fully random: pure charset sampling, no words, language-independent.
-        values = generateRandomPasswords(safeCount, nextRandomPasswordOptions)
-      } else {
-        // Dile göre küratörlü havuzdan tekrarsız; havuz aşımında türevlerle tamamlanır.
-        values = uniquePasswords(safeCount, language)
-      }
-    } else {
-      // Effectively infinite spaces (2^122 UUIDs, large email/address spaces, ...):
-      // retry-with-set makes collisions practically impossible.
-      const seen = new Set<string>()
-      values = []
-      let attempts = 0
-      while (values.length < safeCount && attempts < safeCount * 20 + 20) {
-        attempts += 1
-        const candidate = generateValue(nextType, language, nextPhoneCountryCode)
-        if (seen.has(candidate)) continue
-        seen.add(candidate)
-        values.push(candidate)
-      }
-      while (values.length < safeCount) {
-        values.push(generateValue(nextType, language, nextPhoneCountryCode))
-      }
-    }
+    const values = buildMiscValues({
+      type: nextType,
+      count: safeCount,
+      language,
+      phoneCountryCode: nextPhoneCountryCode,
+      nameGender: nextNameGender,
+      passwordSource: nextPasswordSource,
+      randomPasswordOptions: nextRandomPasswordOptions,
+    })
     const rows: ExportRow[] = values.map((item) => ({ id: randomUUID(), value: item }))
     setExportRows(rows)
-    setValue(formatRows(rows, nextFormat))
+    setValue(formatMiscRows(rows, nextFormat))
+    syncShareUrl({
+      type: nextType,
+      count: safeCount,
+      format: nextFormat,
+      phoneCountryCode: nextPhoneCountryCode,
+      nameGender: nextNameGender,
+    })
   }
   const copyValue = async () => {
     const ok = await copyTextToClipboard(value)
     onCopy(ok ? t("miscCopied") : t("copyFailed"))
   }
+  const copyLine = async (line: string) => {
+    const ok = await copyTextToClipboard(line)
+    onCopy(ok ? t("miscCopied") : t("copyFailed"))
+  }
+  const shareLink = async () => {
+    const ok = await copyTextToClipboard(window.location.href)
+    onCopy(ok ? t("miscLinkCopied") : t("copyFailed"))
+  }
 
   const reformat = (nextFormat: OutputFormat) => {
     setFormat(nextFormat)
-    setValue(formatRows(exportRows, nextFormat))
+    setValue(formatMiscRows(exportRows, nextFormat))
   }
 
   const exportFile = () => {
@@ -705,10 +829,35 @@ export function MiscGenerator({ onCopy, language }: Props) {
           </Select>
         </label>
       )}
-      <pre className="max-h-[400px] overflow-auto rounded-md border bg-muted/30 px-3 py-2 font-mono text-sm whitespace-pre-wrap break-all" aria-live="polite">{value}</pre>
+      {format === "text" ? (
+        <ul className="max-h-[400px] space-y-1 overflow-auto rounded-md border bg-muted/30 px-3 py-2 font-mono text-sm" aria-live="polite">
+          {exportRows.map((row, index) => (
+            <li key={row.id} className="flex items-center justify-between gap-2">
+              <span className="whitespace-pre-wrap break-all">{row.value}</span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 shrink-0"
+                aria-label={`${t("miscCopyLine")} ${index + 1}`}
+                onClick={() => copyLine(row.value)}
+              >
+                <Copy className="h-3.5 w-3.5" />
+              </Button>
+              {index < exportRows.length - 1 ? "\n" : null}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <pre className="max-h-[400px] overflow-auto rounded-md border bg-muted/30 px-3 py-2 font-mono text-sm whitespace-pre-wrap break-all" aria-live="polite">{value}</pre>
+      )}
       <div className="flex gap-2">
         <Button type="button" onClick={() => generate()}>{t("miscGenerate")}</Button>
         <Button type="button" variant="outline" onClick={copyValue}>{t("miscCopy")}</Button>
+        <Button type="button" variant="outline" onClick={shareLink}>
+          <Share2 className="h-3.5 w-3.5" />
+          {t("miscShare")}
+        </Button>
       </div>
       <div className="grid gap-3 rounded-lg border bg-muted/20 p-3 sm:grid-cols-[1fr_auto] sm:items-end">
         <label className="grid gap-1.5 text-sm font-medium">
