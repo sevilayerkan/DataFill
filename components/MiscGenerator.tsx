@@ -58,8 +58,19 @@ type Props = {
 /** Maximum items per batch (also the Count input's max). Output is capped at the pool size when a pool is smaller (e.g. single-gender en names). */
 const MAX_COUNT = 1000
 
-/** Full-name pool per language and gender (unisex = male + female first names). */
+const fullNamePoolCache = new Map<string, string[]>()
+let datePoolCache: { key: string; pool: string[] } | null = null
+const passwordPoolCache = new Map<"en" | "tr", string[]>()
+
+/**
+ * Full-name pool per language and gender (unisex = male + female first names).
+ * Built once per language/gender and cached: callers (generate-on-keystroke
+ * handlers) must treat the result as read-only.
+ */
 export function fullNamePool(language: "en" | "tr", gender: NameGender = "unisex"): string[] {
+  const key = `${language}:${gender}`
+  const cached = fullNamePoolCache.get(key)
+  if (cached) return cached
   const data = language === "tr" ? trNameData : enNameData
   const firsts =
     gender === "male" ? data.maleNames : gender === "female" ? data.femaleNames : [...data.maleNames, ...data.femaleNames]
@@ -69,24 +80,39 @@ export function fullNamePool(language: "en" | "tr", gender: NameGender = "unisex
       pool.push(`${first} ${last}`)
     }
   }
+  fullNamePoolCache.set(key, pool)
   return pool
 }
 
-/** 2000 consecutive dates starting today, formatted in local time (no UTC day-shift). */
-export function datePool(): string[] {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  return Array.from({ length: 2 * MAX_COUNT }, (_, i) => {
-    const d = new Date(today.getTime() + i * 86400000)
+/**
+ * 2000 consecutive dates starting today, formatted in local time (no UTC day-shift).
+ * Cached per calendar day; pass `now` in tests for deterministic output.
+ */
+export function datePool(now: Date = new Date()): string[] {
+  const dayKey = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`
+  if (datePoolCache?.key === dayKey) return datePoolCache.pool
+  const start = new Date(now.getTime())
+  start.setHours(0, 0, 0, 0)
+  const pool = Array.from({ length: 2 * MAX_COUNT }, (_, i) => {
+    const d = new Date(start.getTime() + i * 86400000)
     const month = String(d.getMonth() + 1).padStart(2, "0")
     const day = String(d.getDate()).padStart(2, "0")
     return `${d.getFullYear()}-${month}-${day}`
   })
+  datePoolCache = { key: dayKey, pool }
+  return pool
 }
 
-/** Dile göre üretim havuzu: yalnızca harf+rakam karışık şifreler (tek kelimeler elenmiş). */
+/**
+ * Dile göre üretim havuzu: yalnızca harf+rakam karışık şifreler (tek kelimeler elenmiş).
+ * Cached per language; treat the result as read-only.
+ */
 export function passwordPool(language: "en" | "tr"): string[] {
-  return [...(language === "tr" ? trPasswordData : enPasswordData).mixed]
+  const cached = passwordPoolCache.get(language)
+  if (cached) return cached
+  const pool = [...(language === "tr" ? trPasswordData : enPasswordData).mixed]
+  passwordPoolCache.set(language, pool)
+  return pool
 }
 
 /** Unique passwords: shuffled pool first, then pool-based suffixed variants if n exceeds the pool. */
@@ -185,14 +211,36 @@ export function generateRandomPasswords(
   return values
 }
 
-/** Fisher-Yates shuffle + take: strict sampling without replacement. */
-export function takeUnique<T>(pool: T[], n: number, rand?: RandomSource): T[] {
-  const copy = [...pool]
-  for (let i = copy.length - 1; i > 0; i--) {
+/**
+ * Uniform random sample of up to `n` pool items in random order, without
+ * replacement. Index-based (Floyd's subset + partial shuffle): O(n) time and
+ * memory, so taking 1 item from a 2000-entry pool no longer copies and
+ * shuffles the whole pool. Never mutates `pool`.
+ */
+export function sampleUnique<T>(pool: readonly T[], n: number, rand?: RandomSource): T[] {
+  const count = Math.min(Math.max(0, Math.floor(n) || 0), pool.length)
+  if (count === 0) return []
+  // Floyd's algorithm: uniform subset of `count` indices in O(count).
+  const selected = new Set<number>()
+  for (let i = pool.length - count; i < pool.length; i++) {
     const j = randomInt(i + 1, rand)
-    ;[copy[i], copy[j]] = [copy[j], copy[i]]
+    selected.add(selected.has(j) ? i : j)
   }
-  return copy.slice(0, Math.min(n, copy.length))
+  // Partial Fisher-Yates over the subset for random order.
+  const indices = [...selected]
+  for (let i = indices.length - 1; i > 0; i--) {
+    const j = randomInt(i + 1, rand)
+    ;[indices[i], indices[j]] = [indices[j], indices[i]]
+  }
+  return indices.map((i) => pool[i])
+}
+
+/**
+ * Fisher-Yates shuffle + take: strict sampling without replacement.
+ * Kept for compatibility; delegates to the O(n) {@link sampleUnique}.
+ */
+export function takeUnique<T>(pool: T[], n: number, rand?: RandomSource): T[] {
+  return sampleUnique(pool, n, rand)
 }
 
 function randomDigits(length: number, rand?: RandomSource) {

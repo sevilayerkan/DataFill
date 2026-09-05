@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import FadelyTextUI from "../components/FadelyTextUI"
 import {
+  LOREM_BASE,
   LOREM_MAX_LENGTH,
   LOREM_MIN_LENGTH,
   clampLoremLength,
@@ -35,6 +36,13 @@ describe("generateLoremText", () => {
   it("returns exactly the requested length", () => {
     expect(generateLoremText(100)).toHaveLength(100)
     expect(generateLoremText(50)).toHaveLength(50)
+  })
+
+  it("repeats the base chunk verbatim", () => {
+    const size = 200
+    expect(generateLoremText(size)).toBe(
+      LOREM_BASE.repeat(Math.ceil(size / LOREM_BASE.length)).slice(0, size),
+    )
   })
 
   it("never exceeds the max length", () => {

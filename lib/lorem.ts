@@ -40,9 +40,6 @@ function applyOptions(text: string, options: LoremOptions): string {
 export function generateLoremText(length: number, options: LoremOptions = {}): string {
   const size = clampLoremLength(length)
   const chunk = applyOptions(LOREM_BASE, options) || LOREM_BASE.replace(/\s/g, "")
-  let output = ""
-  while (output.length < size) {
-    output += chunk
-  }
-  return output.slice(0, size)
+  // Single repeat + slice instead of repeated `+=` concat (quadratic copying).
+  return chunk.repeat(Math.ceil(size / chunk.length)).slice(0, size)
 }
