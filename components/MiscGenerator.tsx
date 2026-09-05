@@ -15,6 +15,21 @@ import { emailData as trEmailData } from "@/data/tr/email-data"
 import { addressData as enAddressData } from "@/data/en/address-data"
 import { addressData as trAddressData } from "@/data/tr/address-data"
 import { foldTrLower, generateTrIban, generateVkn, generatePlate } from "@/lib/tr-fake"
+import {
+  generateBooleanValue,
+  generateCompanyName,
+  generateCoordinates,
+  generateCreditCardValue,
+  generateEan13,
+  generateHash,
+  generateHexColor,
+  generateIpv4,
+  generateIpv6,
+  generateJobTitle,
+  generateMac,
+  generateSlug,
+} from "@/lib/fake-extra"
+import { generateLoremParagraph, generateLoremSentence } from "@/lib/lorem"
 import { copyTextToClipboard } from "@/lib/clipboard"
 import { parseNumericDraft } from "@/lib/numeric-input"
 import { randomInt, randomUUID, type RandomSource } from "@/lib/random"
@@ -27,7 +42,33 @@ import {
   type ExportRow,
 } from "@/lib/export"
 
-type DataType = "fullName" | "email" | "address" | "password" | "phone" | "uuid" | "date" | "tckn" | "iban" | "vkn" | "plate" | "username"
+type DataType =
+  | "fullName"
+  | "email"
+  | "address"
+  | "password"
+  | "phone"
+  | "uuid"
+  | "date"
+  | "tckn"
+  | "iban"
+  | "vkn"
+  | "plate"
+  | "username"
+  | "company"
+  | "jobTitle"
+  | "creditCard"
+  | "slug"
+  | "color"
+  | "ipv4"
+  | "ipv6"
+  | "mac"
+  | "coordinates"
+  | "hash"
+  | "barcode"
+  | "boolean"
+  | "sentence"
+  | "paragraph"
 export type OutputFormat = "text" | "json" | "jsonWithId" | "csv" | "csvWithId"
 export type ExportFormat = Exclude<OutputFormat, "text">
 export type NameGender = "male" | "female" | "unisex"
@@ -388,7 +429,34 @@ export interface MiscShareState {
   nameGender: NameGender
 }
 
-const SHARE_TYPES: readonly string[] = ["fullName", "email", "address", "password", "phone", "uuid", "date", "tckn", "iban", "vkn", "plate", "username"]
+const SHARE_TYPES: readonly string[] = [
+  "fullName",
+  "email",
+  "address",
+  "password",
+  "phone",
+  "uuid",
+  "date",
+  "tckn",
+  "iban",
+  "vkn",
+  "plate",
+  "username",
+  "company",
+  "jobTitle",
+  "creditCard",
+  "slug",
+  "color",
+  "ipv4",
+  "ipv6",
+  "mac",
+  "coordinates",
+  "hash",
+  "barcode",
+  "boolean",
+  "sentence",
+  "paragraph",
+]
 const SHARE_FORMATS: readonly string[] = ["text", "json", "jsonWithId", "csv", "csvWithId"]
 const SHARE_GENDERS: readonly string[] = ["male", "female", "unisex"]
 
@@ -422,10 +490,19 @@ export function buildMiscUrlParams(state: MiscShareState): string {
   return `?${params.toString()}`
 }
 
-/** Reflect the current generator settings in the address bar (no reload). */
+/** Reflect the current generator settings in the address bar (no reload). Cleans stale `tool` param so `?type=username&tab=misc` stays consistent. */
 export function syncShareUrl(state: MiscShareState): void {
   try {
-    window.history.replaceState(null, "", `${window.location.pathname}${buildMiscUrlParams(state)}`)
+    const params = new URLSearchParams(window.location.search)
+    params.set("type", state.type)
+    params.set("count", String(state.count))
+    params.set("format", state.format)
+    params.set("country", state.phoneCountryCode)
+    if (state.type === "fullName") params.set("gender", state.nameGender)
+    else params.delete("gender")
+    params.delete("tool")
+    params.set("tab", "misc")
+    window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`)
   } catch {
     // Non-browser or restricted contexts (SSR, some tests): sharing is a no-op.
   }
@@ -505,8 +582,39 @@ function generateValue(
     case "vkn": return generateVkn(rand)
     case "plate": return generatePlate(rand)
     case "username": return generateUsername(language, rand)
+    case "company": return generateCompanyName(language, rand)
+    case "jobTitle": return generateJobTitle(language, rand)
+    case "creditCard": return generateCreditCardValue(rand)
+    case "slug": return generateSlug(language, rand)
+    case "color": return generateHexColor(rand)
+    case "ipv4": return generateIpv4(rand)
+    case "ipv6": return generateIpv6(rand)
+    case "mac": return generateMac(rand)
+    case "coordinates": return generateCoordinates(rand)
+    case "hash": return generateHash("sha256", rand)
+    case "barcode": return generateEan13(rand)
+    case "boolean": return generateBooleanValue(rand)
+    case "sentence": return generateLoremSentence(language, rand)
+    case "paragraph": return generateLoremParagraph(language, rand)
   }
 }
+
+// Re-exported for DatasetBuilder + tests so persona rows stay consistent.
+export {
+  generateBooleanValue,
+  generateCompanyName,
+  generateCoordinates,
+  generateCreditCardValue,
+  generateEan13,
+  generateHash,
+  generateHexColor,
+  generateIpv4,
+  generateIpv6,
+  generateJobTitle,
+  generateMac,
+  generateSlug,
+};
+export { generateLoremParagraph, generateLoremSentence };
 
 export function MiscGenerator({ onCopy, language }: Props) {
   const { t } = useTranslation(language)
@@ -704,6 +812,20 @@ export function MiscGenerator({ onCopy, language }: Props) {
           <SelectItem value="vkn">{t("miscVkn")}</SelectItem>
           <SelectItem value="plate">{t("miscPlate")}</SelectItem>
           <SelectItem value="username">{t("miscUsername")}</SelectItem>
+          <SelectItem value="company">{t("miscCompany")}</SelectItem>
+          <SelectItem value="jobTitle">{t("miscJobTitle")}</SelectItem>
+          <SelectItem value="creditCard">{t("miscCreditCard")}</SelectItem>
+          <SelectItem value="slug">{t("miscSlug")}</SelectItem>
+          <SelectItem value="color">{t("miscColor")}</SelectItem>
+          <SelectItem value="ipv4">{t("miscIpv4")}</SelectItem>
+          <SelectItem value="ipv6">{t("miscIpv6")}</SelectItem>
+          <SelectItem value="mac">{t("miscMac")}</SelectItem>
+          <SelectItem value="coordinates">{t("miscCoordinates")}</SelectItem>
+          <SelectItem value="hash">{t("miscHash")}</SelectItem>
+          <SelectItem value="barcode">{t("miscBarcode")}</SelectItem>
+          <SelectItem value="boolean">{t("miscBoolean")}</SelectItem>
+          <SelectItem value="sentence">{t("miscSentence")}</SelectItem>
+          <SelectItem value="paragraph">{t("miscParagraph")}</SelectItem>
         </SelectContent>
       </Select>
       {type === "fullName" && (
@@ -833,7 +955,17 @@ export function MiscGenerator({ onCopy, language }: Props) {
         <ul className="max-h-[400px] space-y-1 overflow-auto rounded-md border bg-muted/30 px-3 py-2 font-mono text-sm" aria-live="polite">
           {exportRows.map((row, index) => (
             <li key={row.id} className="flex items-center justify-between gap-2">
-              <span className="whitespace-pre-wrap break-all">{row.value}</span>
+              <span className="flex min-w-0 items-center gap-2">
+                {type === "color" && (
+                  <span
+                    aria-hidden="true"
+                    className="h-5 w-5 shrink-0 rounded-sm border border-border shadow-sm"
+                    style={{ backgroundColor: row.value }}
+                    title={row.value}
+                  />
+                )}
+                <span className="whitespace-pre-wrap break-all">{row.value}</span>
+              </span>
               <Button
                 type="button"
                 variant="ghost"

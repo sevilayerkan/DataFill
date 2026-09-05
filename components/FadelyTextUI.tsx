@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Checkbox } from "@/components/ui/checkbox"
 import { MiscGenerator } from "./MiscGenerator"
 import { DatasetBuilder } from "./DatasetBuilder"
+import { TextTools } from "./TextTools"
 import { useTranslation } from "@/hooks/useTranslation"
 import { LOREM_MAX_LENGTH, LOREM_MIN_LENGTH, clampLoremLength, generateLoremText } from "@/lib/lorem"
 import { getTextStats } from "@/lib/text-stats"
@@ -38,7 +39,7 @@ export default function FadelyTextUI() {
   const [removeSpaces, setRemoveSpaces] = useState(false)
   const [removeSpecialChars, setRemoveSpecialChars] = useState(false)
   const [language, setLanguage] = useState<"en" | "tr">("en")
-  const [activeTab, setActiveTab] = useState<"generate" | "counter" | "misc" | "dataset">("generate")
+  const [activeTab, setActiveTab] = useState<"generate" | "counter" | "misc" | "dataset" | "tools">("generate")
   const [settingsOpen, setSettingsOpen] = useState(false)
   const settingsRef = useRef<HTMLDivElement>(null)
   const { t } = useTranslation(language)
@@ -48,6 +49,57 @@ export default function FadelyTextUI() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true)
   }, [])
+
+  // Restore tab + tool from URL (share links). Runs once after mount.
+  // Data params (tool/type) win over stale `tab` so a buggy `?type=username&tab=generate` still opens the right view.
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search)
+      const tab = params.get("tab")
+      const tool = params.get("tool")
+      const type = params.get("type")
+      const validTabs = ["generate", "counter", "misc", "dataset", "tools"] as const
+      const validTools = ["case", "lines", "ws", "b64", "diff"] as const
+      const validTypes = ["fullName", "email", "address", "password", "phone", "uuid", "date", "tckn", "iban", "vkn", "plate", "username", "company", "jobTitle", "creditCard", "slug", "color", "ipv4", "ipv6", "mac", "coordinates", "hash", "barcode", "boolean", "sentence", "paragraph"] as const
+      if (tool && (validTools as readonly string[]).includes(tool)) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setActiveTab("tools")
+      } else if (type && (validTypes as readonly string[]).includes(type)) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setActiveTab("misc")
+      } else if (tab && (validTabs as readonly string[]).includes(tab)) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setActiveTab(tab as typeof activeTab)
+      }
+    } catch {
+      // Non-browser / restricted context: ignore
+    }
+  }, [])
+
+  // Keep `tab` param in sync with the active view (shareable links).
+  // Cleans stale params so `?type=username&tab=generate` never happens.
+  useEffect(() => {
+    if (!mounted) return
+    try {
+      const params = new URLSearchParams(window.location.search)
+      params.set("tab", activeTab)
+      const miscKeys = ["type", "count", "format", "country", "gender"] as const
+      const toolKeys = ["tool"] as const
+      if (activeTab === "generate" || activeTab === "counter" || activeTab === "dataset") {
+        for (const k of [...miscKeys, ...toolKeys]) params.delete(k)
+        // Default tabs keep URL clean: `/` instead of `?tab=generate`
+        if (activeTab === "generate") params.delete("tab")
+      } else if (activeTab === "misc") {
+        for (const k of toolKeys) params.delete(k)
+      } else if (activeTab === "tools") {
+        for (const k of miscKeys) params.delete(k)
+      }
+      const qs = params.toString()
+      window.history.replaceState(null, "", qs ? `${window.location.pathname}?${qs}` : window.location.pathname)
+    } catch {
+      // ignore
+    }
+  }, [activeTab, mounted])
 
   useEffect(() => {
     try {
@@ -171,6 +223,7 @@ export default function FadelyTextUI() {
           <button type="button" onClick={() => setActiveTab("counter")} className="rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground">{t("counter")}</button>
           <button type="button" onClick={() => setActiveTab("misc")} className="rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground">{t("misc")}</button>
           <button type="button" onClick={() => setActiveTab("dataset")} className="rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground">{t("dataset")}</button>
+          <button type="button" onClick={() => setActiveTab("tools")} className="rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground">{t("tools")}</button>
         </nav>
         <div className="flex items-center gap-2">
           <Sun className="h-4 w-4" />
@@ -221,10 +274,11 @@ export default function FadelyTextUI() {
         </div>
       </header>
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="generate">{t("generate")}</TabsTrigger>
           <TabsTrigger value="counter">{t("counter")}</TabsTrigger>
           <TabsTrigger value="misc">{t("misc")}</TabsTrigger>
+          <TabsTrigger value="tools">{t("tools")}</TabsTrigger>
         </TabsList>
         <TabsContent value="generate" className="space-y-4">
           <div className="flex items-center space-x-2">
@@ -327,6 +381,9 @@ export default function FadelyTextUI() {
         </TabsContent>
         <TabsContent value="misc" className="space-y-4">
           <MiscGenerator onCopy={showNotificationMessage} language={language} />
+        </TabsContent>
+        <TabsContent value="tools" className="space-y-4">
+          <TextTools onCopy={showNotificationMessage} language={language} />
         </TabsContent>
         {activeTab === "dataset" && (
           <div className="mt-2 space-y-4">

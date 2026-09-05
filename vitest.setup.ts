@@ -14,4 +14,5 @@ vi.stubGlobal("ResizeObserver", ResizeObserverMock);
 beforeEach(() => {
   window.localStorage.clear();
   document.documentElement.lang = "en";
+  window.history.replaceState(null, "", "/");
 });

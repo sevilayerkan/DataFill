@@ -49,8 +49,8 @@ describe("persona consistency", () => {
 
 describe("formatPersonas", () => {
   const rows: Persona[] = [
-    { fullName: "John Smith", email: "john.smith@gmail.com", phone: "+11234567890", address: "1 Main St, NY", password: "pw-1", uuid: "u1" },
-    { fullName: "Ayşe Yılmaz", email: "ayse.yilmaz@gmail.com", phone: "0532 111 22 33", address: "O'Brien Mah., No: 5", password: "pw-2", uuid: "u2" },
+    { fullName: "John Smith", email: "john.smith@gmail.com", phone: "+11234567890", address: "1 Main St, NY", password: "pw-1", uuid: "u1", company: "Acme Labs", jobTitle: "Software Engineer" },
+    { fullName: "Ayşe Yılmaz", email: "ayse.yilmaz@gmail.com", phone: "0532 111 22 33", address: "O'Brien Mah., No: 5", password: "pw-2", uuid: "u2", company: "Anadolu Bilişim", jobTitle: "Yazılım Mühendisi" },
   ]
 
   it("emits a JSON array restricted to the checked fields", () => {

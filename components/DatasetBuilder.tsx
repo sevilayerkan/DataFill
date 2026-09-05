@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   buildEmailLocal,
   generateAddressValue,
+  generateCompanyName,
+  generateJobTitle,
   generatePhoneValue,
   pickPersonaIdentity,
   takeUnique,
@@ -21,8 +23,25 @@ import { parseNumericDraft } from "@/lib/numeric-input"
 import { randomInt, randomUUID, type RandomSource } from "@/lib/random"
 import { useTranslation } from "@/hooks/useTranslation"
 
-export type PersonaField = "fullName" | "email" | "phone" | "address" | "password" | "uuid"
-export const PERSONA_FIELDS: readonly PersonaField[] = ["fullName", "email", "phone", "address", "password", "uuid"]
+export type PersonaField =
+  | "fullName"
+  | "email"
+  | "phone"
+  | "address"
+  | "password"
+  | "uuid"
+  | "company"
+  | "jobTitle"
+export const PERSONA_FIELDS: readonly PersonaField[] = [
+  "fullName",
+  "email",
+  "phone",
+  "address",
+  "password",
+  "uuid",
+  "company",
+  "jobTitle",
+]
 export type DatasetFormat = "json" | "csv" | "sql"
 export type Persona = Record<PersonaField, string>
 
@@ -35,6 +54,8 @@ const SQL_COLUMNS: Record<PersonaField, string> = {
   address: "address",
   password: "password",
   uuid: "uuid",
+  company: "company",
+  jobTitle: "job_title",
 }
 
 /**
@@ -57,6 +78,8 @@ export function buildPersona(
     address: generateAddressValue(language, rand),
     password: password ?? takeUnique(passwordPool(language), 1, rand)[0],
     uuid: randomUUID(),
+    company: generateCompanyName(language, rand),
+    jobTitle: generateJobTitle(language, rand),
   }
 }
 
@@ -116,6 +139,8 @@ export function DatasetBuilder({ onCopy, language }: Props) {
     address: t("miscAddress"),
     password: t("miscPassword"),
     uuid: t("miscUuid"),
+    company: t("miscCompany"),
+    jobTitle: t("miscJobTitle"),
   }
 
   /** Normalize the count draft into state; returns the effective count. */
