@@ -18,5 +18,5 @@ const names = [...new Set([...(maleNames as string[]), ...(femaleNames as string
 
 export const emailData = {
   names,
-  domains: ["gmail.com", "hotmail.com", "outlook.com", "yahoo.com", "yandex.com"],
+  domains: ["gmail.com", "hotmail.com", "outlook.com", "yahoo.com", "yandex.com", "mynet.com"],
 }

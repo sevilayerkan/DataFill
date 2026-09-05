@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useTranslation } from "@/hooks/useTranslation"
 import { copyTextToClipboard } from "@/lib/clipboard"
-import { generatePhoneNumber, getPhoneCountry, phoneCountries } from "@/data/phone-data"
+import { generatePhoneNumber, getPhoneCountry, phoneCountries, formatPhoneForDisplay } from "@/data/phone-data"
 
 interface PhoneNumberGeneratorProps {
   language: "en" | "tr"
@@ -21,7 +21,8 @@ export function PhoneNumberGenerator({ language, onCopy }: PhoneNumberGeneratorP
 
   const generateForCountry = (nextCountry = country) => {
     try {
-      setPhoneNumber(generatePhoneNumber(nextCountry))
+      const e164 = generatePhoneNumber(nextCountry)
+      setPhoneNumber(formatPhoneForDisplay(nextCountry, e164))
     } catch (error) {
       console.error("Error generating phone number:", error)
       onCopy("Error generating phone number")
@@ -53,7 +54,7 @@ export function PhoneNumberGenerator({ language, onCopy }: PhoneNumberGeneratorP
             // Regenerate immediately if a number is already shown,
             // so switching country visibly changes the output.
             if (phoneNumber) {
-              setPhoneNumber(generatePhoneNumber(nextCountry))
+              setPhoneNumber(formatPhoneForDisplay(nextCountry, generatePhoneNumber(nextCountry)))
             }
           }}
         >

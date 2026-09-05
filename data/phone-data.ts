@@ -1,4 +1,7 @@
 import { randomInt, type RandomSource } from "@/lib/random";
+import { TR_MOBILE_PREFIXES, formatTrGsm } from "@/lib/tr-fake";
+
+export { TR_MOBILE_PREFIXES, formatTrGsm };
 
 export interface PhoneCountry {
   /** Display name (English). */
@@ -44,6 +47,14 @@ function randomDigit(rand?: RandomSource): string {
 
 /** Generates the national part honoring length + optional leading-digit constraint. */
 export function generateNationalNumber(country: PhoneCountry, rand?: RandomSource): string {
+  // Turkey: use operator-realistic 3-digit prefixes (53x/54x/55x/50x).
+  if (country.code === "TR") {
+    const prefix = TR_MOBILE_PREFIXES[randomInt(TR_MOBILE_PREFIXES.length, rand)];
+    const rest = Array.from({ length: Math.max(0, country.nationalLength - prefix.length) }, () =>
+      randomDigit(rand),
+    ).join("");
+    return `${prefix}${rest}`;
+  }
   const digits: string[] = []
   for (let i = 0; i < country.nationalLength; i++) {
     if (i === 0 && country.leadingDigits && country.leadingDigits.length > 0) {
@@ -58,4 +69,14 @@ export function generateNationalNumber(country: PhoneCountry, rand?: RandomSourc
 /** Full international number, e.g. "+905321234567". No spaces so existing `\+\d+` assertions keep passing. */
 export function generatePhoneNumber(country: PhoneCountry, rand?: RandomSource): string {
   return `${country.phoneCode}${generateNationalNumber(country, rand)}`
+}
+
+/**
+ * Display form: TR numbers render in the familiar national GSM shape
+ * (`05xx xxx xx xx`); every other country keeps its raw `+<code><digits>` form.
+ */
+export function formatPhoneForDisplay(country: PhoneCountry, e164: string): string {
+  if (country.code !== "TR") return e164;
+  const national = e164.startsWith(country.phoneCode) ? e164.slice(country.phoneCode.length) : e164;
+  return formatTrGsm(national);
 }

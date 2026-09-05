@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -8,7 +8,12 @@ import { nameData as enNameData } from "@/data/en/name-data"
 import { nameData as trNameData } from "@/data/tr/name-data"
 import { passwordData as enPasswordData } from "@/data/en/password-data"
 import { passwordData as trPasswordData } from "@/data/tr/password-data"
-import { generatePhoneNumber, getPhoneCountry, phoneCountries } from "@/data/phone-data"
+import { generatePhoneNumber, getPhoneCountry, phoneCountries, formatPhoneForDisplay } from "@/data/phone-data"
+import { emailData as enEmailData } from "@/data/en/email-data"
+import { emailData as trEmailData } from "@/data/tr/email-data"
+import { addressData as enAddressData } from "@/data/en/address-data"
+import { addressData as trAddressData } from "@/data/tr/address-data"
+import { foldTrLower, generateTrIban, generateVkn, generatePlate } from "@/lib/tr-fake"
 import { copyTextToClipboard } from "@/lib/clipboard"
 import { parseNumericDraft } from "@/lib/numeric-input"
 import { randomInt, randomUUID, type RandomSource } from "@/lib/random"
@@ -21,7 +26,7 @@ import {
   type ExportRow,
 } from "@/lib/export"
 
-type DataType = "fullName" | "email" | "address" | "password" | "phone" | "uuid" | "date" | "tckn" | "username"
+type DataType = "fullName" | "email" | "address" | "password" | "phone" | "uuid" | "date" | "tckn" | "iban" | "vkn" | "plate" | "username"
 export type OutputFormat = "text" | "json" | "jsonWithId" | "csv" | "csvWithId"
 export type ExportFormat = Exclude<OutputFormat, "text">
 export type NameGender = "male" | "female" | "unisex"
@@ -72,8 +77,10 @@ export function fullNamePool(language: "en" | "tr", gender: NameGender = "unisex
   const cached = fullNamePoolCache.get(key)
   if (cached) return cached
   const data = language === "tr" ? trNameData : enNameData
+  // Unisex merges both lists; a name can appear in both (e.g. TR "Deniz"),
+  // so dedupe firsts to keep the pool duplicate-free and sampling unique.
   const firsts =
-    gender === "male" ? data.maleNames : gender === "female" ? data.femaleNames : [...data.maleNames, ...data.femaleNames]
+    gender === "male" ? data.maleNames : gender === "female" ? data.femaleNames : [...new Set([...data.maleNames, ...data.femaleNames])]
   const pool: string[] = []
   for (const first of firsts) {
     for (const last of data.lastNames) {
@@ -259,20 +266,118 @@ export function generateTCKN(rand?: RandomSource) {
   return [...digits, tenthDigit, eleventhDigit % 10].join("")
 }
 
-const ADDRESS_STREETS = ["Main", "Oak", "Pine", "Cedar"]
+/**
+ * Name-linked, realistic e-mail local-parts per language (never
+ * `user12345678@example.com`): `ad.soyad`, `adsoyad`, `ad_soyad`,
+ * `asoyad`, `ad.s` + an optional short numeric suffix (max 4 digits).
+ */
+export function generateEmailAddress(language: "en" | "tr", rand?: RandomSource): string {
+  const pick = <T,>(pool: readonly T[]): T => pool[randomInt(pool.length, rand)];
+  if (language === "tr") {
+    const firstRaw = pick([...trNameData.maleNames, ...trNameData.femaleNames]);
+    const lastRaw = pick(trNameData.lastNames);
+    const first = foldTrLower(firstRaw);
+    const last = foldTrLower(lastRaw);
+    const style = randomInt(100, rand);
+    let local: string;
+    if (style < 35) local = `${first}.${last}`;
+    else if (style < 55) local = `${first}${last}`;
+    else if (style < 65) local = `${first}_${last}`;
+    else if (style < 75) local = `${first[0]}${last}`;
+    else if (style < 85) local = `${first}.${last[0]}`;
+    else local = `${first}-${last}`;
+    const suffixRoll = randomInt(100, rand);
+    if (suffixRoll >= 50) local += randomDigits(suffixRoll >= 80 ? 3 : 2, rand);
+    return `${local}@${pick(trEmailData.domains)}`;
+  }
+  const firstRaw = pick([...enNameData.maleNames, ...enNameData.femaleNames]);
+  const lastRaw = pick(enNameData.lastNames);
+  const first = firstRaw.toLowerCase();
+  const last = lastRaw.toLowerCase();
+  const style = randomInt(100, rand);
+  let local: string;
+  if (style < 35) local = `${first}.${last}`;
+  else if (style < 55) local = `${first}${last}`;
+  else if (style < 65) local = `${first}_${last}`;
+  else if (style < 75) local = `${first[0]}${last}`;
+  else if (style < 85) local = `${first}.${last[0]}`;
+  else local = `${first}-${last}`;
+  const suffixRoll = randomInt(100, rand);
+  if (suffixRoll >= 50) local += randomDigits(suffixRoll >= 80 ? 3 : 2, rand);
+  return `${local}@${pick(enEmailData.domains)}`;
+}
+
+/** Language-aware address: TR picks a full `mahalle/ilçe/il` address, EN builds a US one. */
+export function generateAddressValue(language: "en" | "tr", rand?: RandomSource): string {
+  if (language === "tr") {
+    const fullAddresses = (trAddressData as { fullAddresses?: string[] }).fullAddresses;
+    if (fullAddresses && fullAddresses.length > 0) {
+      return fullAddresses[randomInt(fullAddresses.length, rand)];
+    }
+    const streets = trAddressData.streets;
+    const districts = (trAddressData as { districts?: string[] }).districts ?? trAddressData.cities;
+    const number = randomInt(200, rand) + 1;
+    return `${streets[randomInt(streets.length, rand)]} No: ${number}, ${districts[randomInt(districts.length, rand)]}, ${trAddressData.cities[randomInt(trAddressData.cities.length, rand)]}`;
+  }
+  const number = randomInt(1000, rand) + 1;
+  const street = enAddressData.streets[randomInt(enAddressData.streets.length, rand)];
+  const city = enAddressData.cities[randomInt(enAddressData.cities.length, rand)];
+  const state = enAddressData.states[randomInt(enAddressData.states.length, rand)];
+  const zip = randomInt(90000, rand) + 10000;
+  return `${number} ${street}, ${city}, ${state} ${zip}`;
+}
+
+/** Phone per selected country; TR renders as national `05xx xxx xx xx`. */
+export function generatePhoneValue(phoneCountryCode: string, rand?: RandomSource): string {
+  const country = getPhoneCountry(phoneCountryCode, "US");
+  const e164 = generatePhoneNumber(country, rand);
+  if (country.code === "TR") return formatPhoneForDisplay(country, e164);
+  return e164;
+}
+
+/**
+ * Name-linked username per language (never `user12345678`): `adsoyad`,
+ * `ad.soyad`, `ad_soyad`, `ad-soyad`, `asoyad` + an optional short numeric
+ * suffix (max 4 digits). ASCII-only: TR names are folded.
+ */
+export function generateUsername(language: "en" | "tr", rand?: RandomSource): string {
+  const pick = <T,>(pool: readonly T[]): T => pool[randomInt(pool.length, rand)];
+  const isTr = language === "tr";
+  const data = isTr ? trNameData : enNameData;
+  const firstRaw = pick([...data.maleNames, ...data.femaleNames]);
+  const lastRaw = pick(data.lastNames);
+  const first = isTr ? foldTrLower(firstRaw) : firstRaw.toLowerCase();
+  const last = isTr ? foldTrLower(lastRaw) : lastRaw.toLowerCase();
+  const style = randomInt(100, rand);
+  let handle: string;
+  if (style < 30) handle = `${first}${last}`;
+  else if (style < 50) handle = `${first}.${last}`;
+  else if (style < 65) handle = `${first}_${last}`;
+  else if (style < 75) handle = `${first}-${last}`;
+  else if (style < 85) handle = `${first[0]}${last}`;
+  else if (style < 93) handle = `${first}${last[0]}`;
+  else handle = `${first[0]}_${last}`;
+  const suffixRoll = randomInt(100, rand);
+  if (suffixRoll >= 40) handle += randomDigits(suffixRoll >= 85 ? 4 : suffixRoll >= 60 ? 3 : 2, rand);
+  return handle;
+}
 
 function generateValue(
   type: Exclude<DataType, "fullName" | "date" | "password">,
+  language: "en" | "tr",
   phoneCountryCode = "US",
   rand?: RandomSource,
 ): string {
   switch (type) {
-    case "email": return `user${randomDigits(8, rand)}@example.com`
-    case "address": return `${randomInt(900, rand) + 100} ${ADDRESS_STREETS[randomInt(ADDRESS_STREETS.length, rand)]} Street, New York, NY`
-    case "phone": return generatePhoneNumber(getPhoneCountry(phoneCountryCode, "US"), rand)
+    case "email": return generateEmailAddress(language, rand)
+    case "address": return generateAddressValue(language, rand)
+    case "phone": return generatePhoneValue(phoneCountryCode, rand)
     case "uuid": return randomUUID()
     case "tckn": return generateTCKN(rand)
-    case "username": return `user${randomDigits(8, rand)}`
+    case "iban": return generateTrIban(rand)
+    case "vkn": return generateVkn(rand)
+    case "plate": return generatePlate(rand)
+    case "username": return generateUsername(language, rand)
   }
 }
 
@@ -284,7 +389,7 @@ export function MiscGenerator({ onCopy, language }: Props) {
   // Committed (clamped) on blur/Generate instead.
   const [countDraft, setCountDraft] = useState("1")
   const [format, setFormat] = useState<OutputFormat>("text")
-  const [phoneCountryCode, setPhoneCountryCode] = useState("US")
+  const [phoneCountryCode, setPhoneCountryCode] = useState(language === "tr" ? "TR" : "US")
   const [nameGender, setNameGender] = useState<NameGender>("unisex")
   const [exportFormat, setExportFormat] = useState<ExportFormat>("json")
   const [passwordSource, setPasswordSource] = useState<PasswordSource>("wordlist")
@@ -307,6 +412,15 @@ export function MiscGenerator({ onCopy, language }: Props) {
     // Initial language only; later changes apply on the next generate.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Keep the phone default aligned with the UI language until the user
+  // picks a country explicitly.
+  const countryTouched = useRef(false)
+  useEffect(() => {
+    if (!countryTouched.current) {
+      setPhoneCountryCode(language === "tr" ? "TR" : "US")
+    }
+  }, [language])
 
   const formatRows = (rows: ExportRow[], outputFormat: OutputFormat) => {
     if (outputFormat === "json") return formatJson(rows, false)
@@ -356,20 +470,20 @@ export function MiscGenerator({ onCopy, language }: Props) {
         values = uniquePasswords(safeCount, language)
       }
     } else {
-      // Effectively infinite spaces (2^122 UUIDs, 10^8 emails, ...):
+      // Effectively infinite spaces (2^122 UUIDs, large email/address spaces, ...):
       // retry-with-set makes collisions practically impossible.
       const seen = new Set<string>()
       values = []
       let attempts = 0
       while (values.length < safeCount && attempts < safeCount * 20 + 20) {
         attempts += 1
-        const candidate = generateValue(nextType, nextPhoneCountryCode)
+        const candidate = generateValue(nextType, language, nextPhoneCountryCode)
         if (seen.has(candidate)) continue
         seen.add(candidate)
         values.push(candidate)
       }
       while (values.length < safeCount) {
-        values.push(generateValue(nextType, nextPhoneCountryCode))
+        values.push(generateValue(nextType, language, nextPhoneCountryCode))
       }
     }
     const rows: ExportRow[] = values.map((item) => ({ id: randomUUID(), value: item }))
@@ -450,6 +564,9 @@ export function MiscGenerator({ onCopy, language }: Props) {
           <SelectItem value="uuid">{t("miscUuid")}</SelectItem>
           <SelectItem value="date">{t("miscDate")}</SelectItem>
           <SelectItem value="tckn">{t("miscTckn")}</SelectItem>
+          <SelectItem value="iban">{t("miscIban")}</SelectItem>
+          <SelectItem value="vkn">{t("miscVkn")}</SelectItem>
+          <SelectItem value="plate">{t("miscPlate")}</SelectItem>
           <SelectItem value="username">{t("miscUsername")}</SelectItem>
         </SelectContent>
       </Select>
@@ -561,6 +678,7 @@ export function MiscGenerator({ onCopy, language }: Props) {
         <label className="grid gap-1.5 text-sm font-medium">
           <span>{t("miscCountry")}</span>
           <Select value={phoneCountryCode} onValueChange={(next) => {
+            countryTouched.current = true
             setPhoneCountryCode(next)
             generate("phone", format, next)
           }}>

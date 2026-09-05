@@ -8,6 +8,9 @@ import { useTranslation } from "@/hooks/useTranslation"
 import { copyTextToClipboard } from "@/lib/clipboard"
 import { emailData as enEmailData } from "@/data/en/email-data"
 import { emailData as trEmailData } from "@/data/tr/email-data"
+import { nameData as enNameData } from "@/data/en/name-data"
+import { nameData as trNameData } from "@/data/tr/name-data"
+import { foldTrLower } from "@/lib/tr-fake"
 
 interface EmailGeneratorProps {
   language: "en" | "tr"
@@ -21,12 +24,26 @@ export function EmailGenerator({ language, onCopy }: EmailGeneratorProps) {
 
   const generateEmail = () => {
     try {
-      const emailData = language === "tr" ? trEmailData : enEmailData
-      const { names, domains: defaultDomains } = emailData
-      const domains = domain ? [domain] : defaultDomains
-      const randomName = names[Math.floor(Math.random() * names.length)]
+      const isTr = language === "tr"
+      const emailData = isTr ? trEmailData : enEmailData
+      const nameData = isTr ? trNameData : enNameData
+      const domains = domain ? [domain] : emailData.domains
+      const firsts = [...nameData.maleNames, ...nameData.femaleNames]
+      const firstRaw = firsts[Math.floor(Math.random() * firsts.length)]
+      const lastRaw = nameData.lastNames[Math.floor(Math.random() * nameData.lastNames.length)]
+      const first = isTr ? foldTrLower(firstRaw) : firstRaw.toLowerCase()
+      const last = isTr ? foldTrLower(lastRaw) : lastRaw.toLowerCase()
+      const roll = Math.random() * 100
+      let local: string
+      if (roll < 40) local = `${first}.${last}`
+      else if (roll < 60) local = `${first}${last}`
+      else if (roll < 75) local = `${first}_${last}`
+      else if (roll < 90) local = `${first[0]}${last}`
+      else local = `${first}.${last[0]}`
+      // Short, human suffix at most — never the old 8-digit `user12345678` shape.
+      if (Math.random() >= 0.5) local += String(Math.floor(Math.random() * 100))
       const randomDomain = domains[Math.floor(Math.random() * domains.length)]
-      setEmail(`${randomName}${Math.floor(Math.random() * 1000)}@${randomDomain}`)
+      setEmail(`${local}@${randomDomain}`)
     } catch (error) {
       console.error("Error generating email:", error)
       onCopy("Error generating email")

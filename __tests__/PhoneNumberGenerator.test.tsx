@@ -26,7 +26,7 @@ describe("PhoneNumberGenerator", () => {
 
     fireEvent.click(generateButton)
 
-    expect(phoneInput.value).toMatch(/^\+90\d{10}$/)
+    expect(phoneInput.value).toMatch(/^05\d{2} \d{3} \d{2} \d{2}$/)
   })
 
   it("changes country and generates correct phone number", () => {
