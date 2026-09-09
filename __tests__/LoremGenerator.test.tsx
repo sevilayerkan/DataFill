@@ -8,6 +8,8 @@ import {
   LOREM_MIN_LENGTH,
   clampLoremLength,
   generateLoremText,
+  generateLoremSentence,
+  generateLoremParagraph,
 } from "../lib/lorem"
 
 describe("clampLoremLength", () => {
@@ -68,6 +70,24 @@ describe("generateLoremText", () => {
   it("keeps exact max length with options enabled", () => {
     const text = generateLoremText(1_000_000, { removeSpaces: true, removeSpecialChars: true })
     expect(text).toHaveLength(LOREM_MAX_LENGTH)
+  })
+})
+
+describe("generateLoremSentence / generateLoremParagraph", () => {
+  it("emits a capitalized sentence ending with a period", () => {
+    for (const language of ["en", "tr"] as const) {
+      const sentence = generateLoremSentence(language)
+      expect(sentence).toMatch(/^[A-ZÇĞİÖŞÜ].*\.$/)
+      const words = sentence.slice(0, -1).split(" ")
+      expect(words.length).toBeGreaterThanOrEqual(6)
+      expect(words.length).toBeLessThanOrEqual(14)
+    }
+  })
+
+  it("joins 3-6 sentences into a paragraph", () => {
+    const paragraph = generateLoremParagraph("en")
+    expect(paragraph.match(/\./g)?.length).toBeGreaterThanOrEqual(3)
+    expect(paragraph.match(/\./g)?.length).toBeLessThanOrEqual(6)
   })
 })
 

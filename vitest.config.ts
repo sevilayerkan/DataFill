@@ -16,5 +16,26 @@ export default defineConfig({
     include: ["__tests__/**/*.test.{ts,tsx}", "**/*.{test,spec}.{ts,tsx}"],
     exclude: ["node_modules", ".next"],
     css: false,
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "json-summary"],
+      exclude: [
+        "node_modules",
+        ".next",
+        "coverage",
+        "**/*.json",
+        "**/*.d.ts",
+        // shadcn vendor primitives: exercised at import/render, not owned logic.
+        "components/ui/**",
+        // Next.js shell (next/font + metadata): verified via `next build`, not jsdom.
+        "app/layout.tsx",
+      ],
+      thresholds: {
+        lines: 84,
+        statements: 83,
+        functions: 83,
+        branches: 74,
+      },
+    },
   },
 });

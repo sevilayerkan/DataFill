@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest"
+import { describe, it, expect, vi, afterEach } from "vitest"
 import { randomInt, randomUUID } from "../lib/random"
 import { generateTCKN, takeUnique } from "../components/MiscGenerator"
 import { generatePhoneNumber, getPhoneCountry } from "../data/phone-data"
@@ -65,5 +65,50 @@ describe("randomUUID", () => {
     for (const id of ids) {
       expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/)
     }
+  })
+})
+
+describe("non-WebCrypto fallbacks", () => {
+  const cryptoDescriptor = Object.getOwnPropertyDescriptor(globalThis, "crypto")
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    if (cryptoDescriptor) Object.defineProperty(globalThis, "crypto", cryptoDescriptor)
+  })
+
+  it("scales Math.random for randomInt without crypto", () => {
+    vi.stubGlobal("crypto", undefined)
+    for (let i = 0; i < 50; i++) {
+      const value = randomInt(10)
+      expect(Number.isInteger(value)).toBe(true)
+      expect(value).toBeGreaterThanOrEqual(0)
+      expect(value).toBeLessThan(10)
+    }
+  })
+
+  it("encodes v4 manually with getRandomValues-only crypto", () => {
+    vi.stubGlobal("crypto", {
+      getRandomValues: (arr: Uint8Array) => {
+        for (let i = 0; i < arr.length; i++) arr[i] = i
+        return arr
+      },
+    })
+    expect(randomUUID()).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/)
+  })
+
+  it("falls back to the Math.random template without any crypto", () => {
+    vi.stubGlobal("crypto", undefined)
+    expect(randomUUID()).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/)
+  })
+
+  it("treats unreadable crypto as absent", () => {
+    Object.defineProperty(globalThis, "crypto", {
+      get() {
+        throw new Error("denied")
+      },
+      configurable: true,
+    })
+    expect(randomInt(5)).toBeLessThan(5)
+    expect(randomUUID()).toMatch(/-4[0-9a-f]{3}-/)
   })
 })

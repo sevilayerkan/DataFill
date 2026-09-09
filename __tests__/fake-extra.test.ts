@@ -215,3 +215,15 @@ describe("Misc + Dataset integration", () => {
     expect(TR_JOB_TITLES).toContain(persona.jobTitle);
   });
 });
+
+describe("edge fallbacks", () => {
+  it("reports Unknown for unrecognized card numbers", () => {
+    expect(detectCreditCardBrand("9999999999999999")).toBe("Unknown");
+    expect(detectCreditCardBrand("not a card")).toBe("Unknown");
+  });
+
+  it("returns the static fallback when every IPv4 draw is reserved", () => {
+    // Constant-zero source: all-octets-zero ten times -> exhausted retries.
+    expect(generateIpv4(() => 0)).toBe("192.168.0.1");
+  });
+});

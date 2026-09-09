@@ -142,3 +142,16 @@ describe("language-aware Misc values", () => {
     expect(generateUsername("en", lcg(12))).toBe(generateUsername("en", lcg(12)))
   })
 })
+
+describe("formatTrGsm edges", () => {
+  it("strips a leading zero before formatting", () => {
+    expect(formatTrGsm("0532 123 45 67")).toBe("0532 123 45 67")
+    expect(formatTrGsm("05321234567")).toBe("0532 123 45 67")
+  })
+
+  it("returns unknown shapes as-is", () => {
+    expect(formatTrGsm("123")).toBe("123")
+    expect(formatTrGsm("+1 555 123 4567")).toBe("+1 555 123 4567")
+    expect(formatTrGsm("")).toBe("")
+  })
+})

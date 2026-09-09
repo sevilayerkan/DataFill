@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest"
+import { describe, it, expect, vi, afterEach } from "vitest"
 import { countLines, countWords, getTextStats } from "../lib/text-stats"
 
 describe("countWords", () => {
@@ -38,5 +38,29 @@ describe("getTextStats", () => {
       words: 6,
       lines: 3,
     })
+  })
+})
+
+describe("countWords without Intl.Segmenter", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  function withoutSegmenter() {
+    vi.stubGlobal("Intl", { ...Intl, Segmenter: undefined })
+  }
+
+  it("falls back to whitespace splitting", () => {
+    withoutSegmenter()
+    expect(countWords("Hello World! This is a test.")).toBe(6)
+    expect(countWords("")).toBe(0)
+    expect(countWords("   ")).toBe(0)
+    expect(countWords("hello\u00A0world")).toBe(2)
+  })
+
+  it("counts one word per CJK char in the fallback", () => {
+    withoutSegmenter()
+    expect(countWords("日本語テスト")).toBe(6)
+    expect(countWords("你好世界")).toBe(4)
   })
 })
