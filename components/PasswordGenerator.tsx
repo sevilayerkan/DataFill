@@ -29,8 +29,8 @@ function shuffled<T>(items: readonly T[]): T[] {
   return copy
 }
 
-/** Saf rastgele şifre: kelime yok, Türkçe karakter yok — sadece ASCII harf + rakam (+simgeler). */
-function randomPassword(length: number): string {
+/** Saf rastgele şifre: kelime yok, Türkçe karakter yok — sadece ASCII harf + rakam (+simgeler). Exported for unit tests. */
+export function randomPassword(length: number): string {
   const chars: string[] = Array.from(
     { length },
     () => CHARSET.charAt(Math.floor(Math.random() * CHARSET.length)),

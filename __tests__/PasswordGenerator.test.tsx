@@ -1,10 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import {
   PasswordGenerator,
   createWordlistState,
   nextWordlistPassword,
+  randomPassword,
 } from "../components/PasswordGenerator"
 import { passwordPool, uniquePasswords } from "../components/MiscGenerator"
 import { passwordData as enPasswordData } from "../data/en/password-data"
@@ -74,6 +75,128 @@ describe("PasswordGenerator", () => {
       seen.add(input.value)
     }
     expect(seen.size).toBe(25)
+  })
+})
+
+describe("randomPassword forcing", () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it("forces a digit when the draw has none", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0)
+    const pw = randomPassword(12)
+    // All draws pick CHARSET[0] ('a'); forced digit lands at pickIndex(-1) = 0.
+    expect(pw).toHaveLength(12)
+    expect(pw[0]).toBe("0")
+    expect(pw).toMatch(/\d/)
+    expect(pw).toMatch(/\p{L}/u)
+  })
+
+  it("forces a letter when the draw has none, retrying a colliding index", () => {
+    // 0.9 -> CHARSET[66] ('%'): symbol-only draws, so both forcing branches run.
+    const draws = [
+      ...Array<string | number>(12).fill(0.9), // chars
+      0.9, // pickIndex(-1) -> 10
+      0.9, // forced digit '9'
+      0.9, // pickIndex(10) -> 10: collides, retry
+      0.1, // -> 1: accepted
+      0.1, // letter: floor(0.1 * 52) = 5 -> 'f'
+    ]
+    vi.spyOn(Math, "random").mockImplementation(() => (draws.shift() as number) ?? 0.5)
+    const pw = randomPassword(12)
+    expect(draws).toHaveLength(0)
+    expect(pw).toHaveLength(12)
+    expect(pw[1]).toBe("f")
+    expect(pw[10]).toBe("9")
+    expect(pw).toMatch(/\d/)
+    expect(pw).toMatch(/\p{L}/u)
+  })
+
+  it("always mixes letters and digits", () => {
+    for (let i = 0; i < 100; i++) {
+      const pw = randomPassword(12)
+      expect(pw).toHaveLength(12)
+      expect(pw).toMatch(/\d/)
+      expect(pw).toMatch(/\p{L}/u)
+    }
+  })
+})
+
+describe("PasswordGenerator source + slider", () => {
+  const mockOnCopy = vi.fn()
+
+  function selectSource(name: string) {
+    fireEvent.click(screen.getByRole("combobox", { name: "Source:" }))
+    fireEvent.click(screen.getByRole("option", { name }))
+  }
+
+  function output(): HTMLInputElement {
+    return screen.getByRole("textbox") as HTMLInputElement
+  }
+
+  beforeEach(() => {
+    mockOnCopy.mockClear()
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText: vi.fn().mockResolvedValue(undefined) },
+      configurable: true,
+    })
+  })
+
+  it("notifies when there is no password to copy", async () => {
+    render(<PasswordGenerator language="en" onCopy={mockOnCopy} />)
+    fireEvent.click(screen.getByText("Copy to Clipboard"))
+    await waitFor(() => expect(mockOnCopy).toHaveBeenCalledWith("No password to copy!"))
+  })
+
+  it("switches to the wordlist source and locks the length slider", () => {
+    render(<PasswordGenerator language="en" onCopy={mockOnCopy} />)
+    selectSource("Wordlist")
+
+    expect(screen.getByRole("slider")).toHaveAttribute("data-disabled", "")
+    fireEvent.click(screen.getByText("Generate Password"))
+    const value = output().value
+    expect(value.length).toBeGreaterThan(0)
+    // Hybrid pool: either a curated item or a fresh 12-char random.
+    expect(
+      enPasswordData.mixed.includes(value) ||
+        (/^.{12}$/.test(value) && /\d/.test(value) && /\p{L}/u.test(value)),
+    ).toBe(true)
+  })
+
+  it("follows the slider length in random mode", () => {
+    render(<PasswordGenerator language="en" onCopy={mockOnCopy} />)
+    fireEvent.keyDown(screen.getByRole("slider"), { key: "ArrowRight" })
+    expect(screen.getByText("Password Length: 13")).toBeInTheDocument()
+
+    fireEvent.click(screen.getByText("Generate Password"))
+    expect(output().value).toHaveLength(13)
+  })
+
+  it("resets the wordlist deck when the language changes", () => {
+    const { rerender } = render(<PasswordGenerator language="en" onCopy={mockOnCopy} />)
+    selectSource("Wordlist")
+    fireEvent.click(screen.getByText("Generate Password"))
+    expect(output().value.length).toBeGreaterThan(0)
+
+    rerender(<PasswordGenerator language="tr" onCopy={mockOnCopy} />)
+    fireEvent.click(screen.getByText("Şifre Üret"))
+    expect(output().value.length).toBeGreaterThan(0)
+  })
+
+  it("reports generation errors instead of crashing", () => {
+    vi.spyOn(console, "error").mockImplementation(() => {})
+    vi.spyOn(Math, "random").mockImplementation(() => {
+      throw new Error("no entropy")
+    })
+    try {
+      render(<PasswordGenerator language="en" onCopy={mockOnCopy} />)
+      fireEvent.click(screen.getByText("Generate Password"))
+      expect(mockOnCopy).toHaveBeenCalledWith("Error generating password")
+      expect(output().value).toBe("")
+    } finally {
+      vi.restoreAllMocks()
+    }
   })
 })
 
