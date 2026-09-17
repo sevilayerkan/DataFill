@@ -73,7 +73,8 @@ export function EmailGenerator({ language, onCopy }: EmailGeneratorProps) {
       <Button onClick={generateEmail} className="w-full">
         {t("generateEmail")}
       </Button>
-      <Input value={email} readOnly />
+      <Label htmlFor="generated-email" className="sr-only">{t("email")}</Label>
+      <Input id="generated-email" value={email} readOnly aria-label={t("email")} />
       <Button variant="outline" className="w-full bg-transparent" onClick={copyToClipboard}>
         {t("copyToClipboard")}
       </Button>

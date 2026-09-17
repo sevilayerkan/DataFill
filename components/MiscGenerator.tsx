@@ -42,7 +42,7 @@ import {
   type ExportRow,
 } from "@/lib/export"
 
-type DataType =
+export type DataType =
   | "fullName"
   | "email"
   | "address"
@@ -71,7 +71,7 @@ type DataType =
   | "paragraph"
 export type OutputFormat = "text" | "json" | "jsonWithId" | "csv" | "csvWithId"
 export type ExportFormat = Exclude<OutputFormat, "text">
-export type NameGender = "male" | "female" | "unisex"
+export type NameGender = "male" | "female" | "all"
 export type PasswordSource = "wordlist" | "random"
 
 export interface RandomPasswordOptions {
@@ -100,6 +100,9 @@ const SYMBOL_CHARS = "!@#$%^&*()-_=+[]{};:,.<>?"
 type Props = {
   onCopy: (message: string) => void
   language: "en" | "tr"
+  /** Controlled data-type (hamburger menu deep-links). Uncontrolled when omitted. */
+  selectedType?: DataType
+  onSelectedTypeChange?: (type: DataType) => void
 }
 
 /** Maximum items per batch (also the Count input's max). Output is capped at the pool size when a pool is smaller (e.g. single-gender en names). */
@@ -110,16 +113,16 @@ let datePoolCache: { key: string; pool: string[] } | null = null
 const passwordPoolCache = new Map<"en" | "tr", string[]>()
 
 /**
- * Full-name pool per language and gender (unisex = male + female first names).
+ * Full-name pool per language and gender (all = male + female first names).
  * Built once per language/gender and cached: callers (generate-on-keystroke
  * handlers) must treat the result as read-only.
  */
-export function fullNamePool(language: "en" | "tr", gender: NameGender = "unisex"): string[] {
+export function fullNamePool(language: "en" | "tr", gender: NameGender = "all"): string[] {
   const key = `${language}:${gender}`
   const cached = fullNamePoolCache.get(key)
   if (cached) return cached
   const data = language === "tr" ? trNameData : enNameData
-  // Unisex merges both lists; a name can appear in both (e.g. TR "Deniz"),
+  // All merges both lists; a name can appear in both (e.g. TR "Deniz"),
   // so dedupe firsts to keep the pool duplicate-free and sampling unique.
   const firsts =
     gender === "male" ? data.maleNames : gender === "female" ? data.femaleNames : [...new Set([...data.maleNames, ...data.femaleNames])]
@@ -458,7 +461,7 @@ const SHARE_TYPES: readonly string[] = [
   "paragraph",
 ]
 const SHARE_FORMATS: readonly string[] = ["text", "json", "jsonWithId", "csv", "csvWithId"]
-const SHARE_GENDERS: readonly string[] = ["male", "female", "unisex"]
+const SHARE_GENDERS: readonly string[] = ["male", "female", "all"]
 
 export function parseMiscUrlParams(search: string): Partial<MiscShareState> {
   const params = new URLSearchParams(search)
@@ -475,7 +478,8 @@ export function parseMiscUrlParams(search: string): Partial<MiscShareState> {
   const country = params.get("country")
   if (country && phoneCountries.some((c) => c.code === country)) parsed.phoneCountryCode = country
   const gender = params.get("gender")
-  if (gender && (SHARE_GENDERS as readonly string[]).includes(gender)) parsed.nameGender = gender as NameGender
+  if (gender === "unisex") parsed.nameGender = "all" // legacy share links
+  else if (gender && (SHARE_GENDERS as readonly string[]).includes(gender)) parsed.nameGender = gender as NameGender
   return parsed
 }
 
@@ -616,16 +620,22 @@ export {
 };
 export { generateLoremParagraph, generateLoremSentence };
 
-export function MiscGenerator({ onCopy, language }: Props) {
+export function MiscGenerator({ onCopy, language, selectedType, onSelectedTypeChange }: Props) {
   const { t } = useTranslation(language)
-  const [type, setType] = useState<DataType>("fullName")
+  const [internalType, setInternalType] = useState<DataType>("fullName")
+  // Controlled when the hamburger menu drives the selection; otherwise local state.
+  const type = selectedType ?? internalType
+  const setType = (next: DataType) => {
+    setInternalType(next)
+    onSelectedTypeChange?.(next)
+  }
   const [count, setCount] = useState(1)
   // Raw input draft: clearing the field must not push 0/NaN into state.
   // Committed (clamped) on blur/Generate instead.
   const [countDraft, setCountDraft] = useState("1")
   const [format, setFormat] = useState<OutputFormat>("text")
   const [phoneCountryCode, setPhoneCountryCode] = useState(language === "tr" ? "TR" : "US")
-  const [nameGender, setNameGender] = useState<NameGender>("unisex")
+  const [nameGender, setNameGender] = useState<NameGender>("all")
   const [exportFormat, setExportFormat] = useState<ExportFormat>("json")
   const [passwordSource, setPasswordSource] = useState<PasswordSource>("wordlist")
   const [randomPasswordOptions, setRandomPasswordOptions] = useState<RandomPasswordOptions>(
@@ -644,15 +654,22 @@ export function MiscGenerator({ onCopy, language }: Props) {
   // Row ids/values need client-side randomness: populate after mount so the
   // SSR/prerender output stays deterministic and hydration matches.
   // A share link (`?type=email&count=10&country=TR`) restores the settings here.
+  const didInit = useRef(false)
   useEffect(() => {
     const params = parseMiscUrlParams(window.location.search)
-    const effType = params.type ?? "fullName"
+    // Controlled (hamburger menu) is the source of truth for the data type:
+    // TabsContent unmounts inactive panels, so a menu deep-link remounts this
+    // component — generating with the prop keeps display and rows consistent
+    // even when the URL was cleaned by an intermediate tab switch.
+    const effType = selectedType ?? params.type ?? "fullName"
     const effFormat = params.format ?? "text"
     const effCountry = params.phoneCountryCode ?? (language === "tr" ? "TR" : "US")
-    const effGender = params.nameGender ?? "unisex"
+    const effGender = params.nameGender ?? "all"
     const effCount = params.count ?? 1
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setType(effType)
+    if (selectedType === undefined) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setType(effType)
+    }
     setFormat(effFormat)
     setPhoneCountryCode(effCountry)
     setNameGender(effGender)
@@ -670,6 +687,7 @@ export function MiscGenerator({ onCopy, language }: Props) {
     }).map((item) => ({ id: randomUUID(), value: item }))
     setExportRows(rows)
     setValue(formatMiscRows(rows, effFormat))
+    didInit.current = true
     // Initial language only; later changes apply on the next generate.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -744,6 +762,19 @@ export function MiscGenerator({ onCopy, language }: Props) {
     setValue(formatMiscRows(exportRows, nextFormat))
   }
 
+  // Hamburger menu deep-link: regenerating when the parent picks a new type
+  // mirrors the in-panel Select behavior (fresh values + shareable URL).
+  // Skipped on mount — the init effect above already generated once.
+  const prevExternalType = useRef(selectedType)
+  useEffect(() => {
+    if (selectedType === undefined || !didInit.current) return
+    if (prevExternalType.current === selectedType) return
+    prevExternalType.current = selectedType
+    generate(selectedType, format, phoneCountryCode, nameGender, passwordSource, randomPasswordOptions)
+    // Only the type drives this; other settings are read fresh via generate args.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedType])
+
   const exportFile = () => {
     const withId = exportFormat === "jsonWithId" || exportFormat === "csvWithId"
     const isJson = exportFormat === "json" || exportFormat === "jsonWithId"
@@ -765,6 +796,7 @@ export function MiscGenerator({ onCopy, language }: Props) {
           <input
             className="h-10 rounded-md border bg-background px-3 font-normal outline-none focus:ring-2 focus:ring-ring"
             type="number"
+            inputMode="numeric"
             min={1}
             max={MAX_COUNT}
             step={1}
@@ -840,7 +872,7 @@ export function MiscGenerator({ onCopy, language }: Props) {
             <SelectContent>
               <SelectItem value="male">{t("miscMan")}</SelectItem>
               <SelectItem value="female">{t("miscWoman")}</SelectItem>
-              <SelectItem value="unisex">{t("miscUnisex")}</SelectItem>
+              <SelectItem value="all">{t("miscAll")}</SelectItem>
             </SelectContent>
           </Select>
         </label>
@@ -868,6 +900,7 @@ export function MiscGenerator({ onCopy, language }: Props) {
                 <input
                   className="h-10 rounded-md border bg-background px-3 font-normal outline-none focus:ring-2 focus:ring-ring"
                   type="number"
+                  inputMode="numeric"
                   min={RANDOM_PASSWORD_MIN_LENGTH}
                   max={RANDOM_PASSWORD_MAX_LENGTH}
                   step={1}
@@ -924,7 +957,7 @@ export function MiscGenerator({ onCopy, language }: Props) {
                         generate("password", format, phoneCountryCode, nameGender, "random", nextOptions)
                       }}
                     />
-                    <span>{option.label}</span>
+                    <span aria-hidden="true">{option.label}</span>
                   </label>
                 ))}
               </div>
@@ -952,13 +985,16 @@ export function MiscGenerator({ onCopy, language }: Props) {
         </label>
       )}
       {format === "text" ? (
-        <ul className="max-h-[400px] space-y-1 overflow-auto rounded-md border bg-muted/30 px-3 py-2 font-mono text-sm" aria-live="polite">
+        <>
+          <span className="sr-only" role="status">{t("miscResultsCount", { count: exportRows.length })}</span>
+          <ul className="max-h-[400px] space-y-1 overflow-auto rounded-md border bg-muted/30 px-3 py-2 font-mono text-sm" aria-live="polite" aria-label={t("miscResults")}>
           {exportRows.map((row, index) => (
             <li key={row.id} className="flex items-center justify-between gap-2">
               <span className="flex min-w-0 items-center gap-2">
                 {type === "color" && (
                   <span
-                    aria-hidden="true"
+                    role="img"
+                    aria-label={row.value}
                     className="h-5 w-5 shrink-0 rounded-sm border border-border shadow-sm"
                     style={{ backgroundColor: row.value }}
                     title={row.value}
@@ -974,20 +1010,21 @@ export function MiscGenerator({ onCopy, language }: Props) {
                 aria-label={`${t("miscCopyLine")} ${index + 1}`}
                 onClick={() => copyLine(row.value)}
               >
-                <Copy className="h-3.5 w-3.5" />
+                <Copy className="h-3.5 w-3.5" aria-hidden="true" />
               </Button>
               {index < exportRows.length - 1 ? "\n" : null}
             </li>
           ))}
-        </ul>
+          </ul>
+        </>
       ) : (
-        <pre className="max-h-[400px] overflow-auto rounded-md border bg-muted/30 px-3 py-2 font-mono text-sm whitespace-pre-wrap break-all" aria-live="polite">{value}</pre>
+        <pre className="max-h-[400px] overflow-auto rounded-md border bg-muted/30 px-3 py-2 font-mono text-sm whitespace-pre-wrap break-all" aria-live="polite" aria-label={t("miscResults")}>{value}</pre>
       )}
       <div className="flex gap-2">
         <Button type="button" onClick={() => generate()}>{t("miscGenerate")}</Button>
         <Button type="button" variant="outline" onClick={copyValue}>{t("miscCopy")}</Button>
         <Button type="button" variant="outline" onClick={shareLink}>
-          <Share2 className="h-3.5 w-3.5" />
+          <Share2 className="h-3.5 w-3.5" aria-hidden="true" />
           {t("miscShare")}
         </Button>
       </div>

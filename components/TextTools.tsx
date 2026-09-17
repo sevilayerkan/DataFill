@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -28,6 +28,9 @@ import {
 type Props = {
   onCopy: (message: string) => void;
   language: "en" | "tr";
+  /** Controlled tool (hamburger menu deep-links). Uncontrolled when omitted. */
+  selectedTool?: ToolId;
+  onSelectedToolChange?: (tool: ToolId) => void;
 };
 
 function syncToolsUrl(tool: ToolId): void {
@@ -57,18 +60,43 @@ function ToolCard({
   );
 }
 
-export function TextTools({ onCopy, language }: Props) {
+export function TextTools({ onCopy, language, selectedTool, onSelectedToolChange }: Props) {
   const { t } = useTranslation(language);
-  const [tool, setTool] = useState<ToolId>("case");
+  const [internalTool, setInternalTool] = useState<ToolId>("case");
+  // Controlled when the hamburger menu drives the selection; otherwise local state.
+  const tool = selectedTool ?? internalTool;
+  const setTool = (next: ToolId) => {
+    setInternalTool(next);
+    onSelectedToolChange?.(next);
+  };
 
-  // Restore selected tool from URL (e.g. ?tool=diff) on mount
+  // Restore selected tool from URL (e.g. ?tool=diff) on mount.
+  // When controlled, the parent already restored it — just sync this mount.
+  const didInit = useRef(false);
   useEffect(() => {
     const parsed = parseToolsUrlParams(window.location.search);
     if (parsed.tool && (TOOL_IDS as readonly string[]).includes(parsed.tool)) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setTool(parsed.tool);
+      if (selectedTool === undefined) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setTool(parsed.tool);
+      } else {
+        syncToolsUrl(parsed.tool);
+      }
     }
+    didInit.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Hamburger menu deep-link: keep the share URL in sync when the parent
+  // picks a new tool. Each card keeps its own input state, so no
+  // regeneration is needed — just reveal the selected card.
+  const prevExternalTool = useRef(selectedTool);
+  useEffect(() => {
+    if (selectedTool === undefined || !didInit.current) return;
+    if (prevExternalTool.current === selectedTool) return;
+    prevExternalTool.current = selectedTool;
+    syncToolsUrl(selectedTool);
+  }, [selectedTool]);
 
   // ---- Case ----
   const [caseInput, setCaseInput] = useState("");
@@ -148,7 +176,7 @@ export function TextTools({ onCopy, language }: Props) {
           </Select>
         </label>
         <Button type="button" variant="outline" size="sm" onClick={shareLink} className="mb-[1px] shrink-0">
-          <Share2 className="h-3.5 w-3.5" />
+          <Share2 className="h-3.5 w-3.5" aria-hidden="true" />
           {t("miscShare")}
         </Button>
       </div>
@@ -316,8 +344,9 @@ export function TextTools({ onCopy, language }: Props) {
         <ToolCard title={t("toolsDiffTitle")}>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">{t("toolsDiffBefore")}</label>
+              <label htmlFor="tools-diff-before" className="text-xs font-medium text-muted-foreground">{t("toolsDiffBefore")}</label>
               <Textarea
+                id="tools-diff-before"
                 value={diffA}
                 onChange={(e) => setDiffA(e.target.value)}
                 placeholder={t("toolsDiffPlaceholderA")}
@@ -326,8 +355,9 @@ export function TextTools({ onCopy, language }: Props) {
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">{t("toolsDiffAfter")}</label>
+              <label htmlFor="tools-diff-after" className="text-xs font-medium text-muted-foreground">{t("toolsDiffAfter")}</label>
               <Textarea
+                id="tools-diff-after"
                 value={diffB}
                 onChange={(e) => setDiffB(e.target.value)}
                 placeholder={t("toolsDiffPlaceholderB")}
@@ -347,7 +377,7 @@ export function TextTools({ onCopy, language }: Props) {
               <ul className="divide-y">
                 {diffResult.map((line, idx) => (
                   <li
-                    key={idx}
+                    key={`${line.type}-${idx}-${line.text.length}-${line.text.slice(0, 32)}`}
                     className={
                       line.type === "added"
                         ? "bg-green-500/10 px-3 py-1 text-green-700 dark:text-green-300"

@@ -73,7 +73,8 @@ export function PhoneNumberGenerator({ language, onCopy }: PhoneNumberGeneratorP
       <Button onClick={generatePhoneNumberHandler} className="w-full">
         {t("generatePhoneNumber")}
       </Button>
-      <Input value={phoneNumber} readOnly />
+      <Label htmlFor="generated-phone" className="sr-only">{t("phone")}</Label>
+      <Input id="generated-phone" value={phoneNumber} readOnly aria-label={t("phone")} />
       <Button variant="outline" className="w-full bg-transparent" onClick={copyToClipboard}>
         {t("copyToClipboard")}
       </Button>

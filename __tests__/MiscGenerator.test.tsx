@@ -104,7 +104,7 @@ describe("MiscGenerator name gender selection", () => {
   })
 
   it("defaults to a unisex pool combining both genders", () => {
-    const unisex = fullNamePool("en", "unisex")
+    const unisex = fullNamePool("en", "all")
     const implicit = fullNamePool("en")
     expect(unisex).toEqual(implicit)
     expect(unisex.length).toBe(
@@ -124,18 +124,18 @@ describe("MiscGenerator name gender selection", () => {
     }
   })
 
-  it("shows Man/Woman/Unisex options for the full-name type", () => {
+  it("shows Man/Woman/All options for the full-name type", () => {
     render(<MiscGenerator onCopy={vi.fn()} language="en" />)
     fireEvent.click(screen.getByRole("combobox", { name: "Gender" }))
     const options = screen.getAllByRole("option").map((option) => option.textContent)
-    expect(options).toEqual(["Man", "Woman", "Unisex"])
+    expect(options).toEqual(["Man", "Woman", "All"])
   })
 
   it("shows localized gender options in Turkish", () => {
     render(<MiscGenerator onCopy={vi.fn()} language="tr" />)
     fireEvent.click(screen.getByRole("combobox", { name: "Cinsiyet" }))
     const options = screen.getAllByRole("option").map((option) => option.textContent)
-    expect(options).toEqual(["Erkek", "Kadın", "Unisex"])
+    expect(options).toEqual(["Erkek", "Kadın", "Tümü"])
   })
 
   it("generates only male first names when Man is selected", () => {
@@ -204,7 +204,7 @@ describe("MiscGenerator share links", () => {
   })
 
   it("omits gender from the link unless generating names", () => {
-    const phone = buildMiscUrlParams({ type: "tckn", count: 1, format: "text", phoneCountryCode: "TR", nameGender: "unisex" })
+    const phone = buildMiscUrlParams({ type: "tckn", count: 1, format: "text", phoneCountryCode: "TR", nameGender: "all" })
     expect(phone).toBe("?type=tckn&count=1&format=text&country=TR")
     expect(phone).not.toContain("gender")
     const names = buildMiscUrlParams({ type: "fullName", count: 1, format: "text", phoneCountryCode: "TR", nameGender: "male" })
@@ -255,7 +255,7 @@ describe("MiscGenerator share links", () => {
       count: 5,
       language: "tr",
       phoneCountryCode: "TR",
-      nameGender: "unisex",
+      nameGender: "all",
       passwordSource: "wordlist",
       randomPasswordOptions: { length: 16, lowercase: true, uppercase: true, digits: true, symbols: true },
     })

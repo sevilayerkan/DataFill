@@ -170,7 +170,7 @@ describe("Misc + Dataset integration", () => {
   const base = {
     language: "tr" as const,
     phoneCountryCode: "TR",
-    nameGender: "unisex" as const,
+    nameGender: "all" as const,
     passwordSource: "wordlist" as const,
     randomPasswordOptions: {
       length: 16,

@@ -85,7 +85,8 @@ export function NameGenerator({ language, onCopy }: NameGeneratorProps) {
       <Button onClick={generateName} className="w-full">
         {t("generateName")}
       </Button>
-      <Input value={name} readOnly />
+      <Label htmlFor="generated-name" className="sr-only">{t("name")}</Label>
+      <Input id="generated-name" value={name} readOnly aria-label={t("name")} />
       <Button variant="outline" className="w-full bg-transparent" onClick={copyToClipboard}>
         {t("copyToClipboard")}
       </Button>

@@ -164,7 +164,7 @@ export function PasswordGenerator({ language, onCopy }: PasswordGeneratorProps) 
         </Select>
       </div>
       <div className="space-y-2">
-        <Label>{t("passwordLength", { length })}</Label>
+        <Label id="password-length-label">{t("passwordLength", { length })}</Label>
         <Slider
           value={[length]}
           onValueChange={(value) => setLength(value[0])}
@@ -172,12 +172,15 @@ export function PasswordGenerator({ language, onCopy }: PasswordGeneratorProps) 
           max={32}
           step={1}
           disabled={source === "wordlist"}
+          aria-labelledby="password-length-label"
+          aria-label={t("passwordLength", { length })}
         />
       </div>
       <Button onClick={generatePassword} className="w-full">
         {t("generatePassword")}
       </Button>
-      <Input value={password} readOnly />
+      <Label htmlFor="generated-password" className="sr-only">{t("password")}</Label>
+      <Input id="generated-password" value={password} readOnly aria-label={t("password")} />
       <Button variant="outline" className="w-full bg-transparent" onClick={copyToClipboard}>
         {t("copyToClipboard")}
       </Button>

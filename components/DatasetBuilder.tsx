@@ -195,6 +195,7 @@ export function DatasetBuilder({ onCopy, language }: Props) {
           <input
             className="h-10 rounded-md border bg-background px-3 font-normal outline-none focus:ring-2 focus:ring-ring"
             type="number"
+            inputMode="numeric"
             min={1}
             max={MAX_COUNT}
             step={1}
@@ -228,15 +229,15 @@ export function DatasetBuilder({ onCopy, language }: Props) {
               aria-label={fieldLabel[field]}
               onCheckedChange={(checked) => toggleField(field, checked === true)}
             />
-            <span>{fieldLabel[field]}</span>
+            <span aria-hidden="true">{fieldLabel[field]}</span>
           </label>
         ))}
       </fieldset>
-      <pre className="max-h-[400px] overflow-auto rounded-md border bg-muted/30 px-3 py-2 font-mono text-sm whitespace-pre-wrap break-all" aria-live="polite">{value}</pre>
+      <pre className="max-h-[400px] overflow-auto rounded-md border bg-muted/30 px-3 py-2 font-mono text-sm whitespace-pre-wrap break-all" aria-live="polite" aria-label={t("datasetResults")} aria-atomic="true">{value || t("datasetEmpty")}</pre>
       <div className="flex gap-2">
         <Button type="button" onClick={() => generate()} disabled={fields.length === 0}>{t("miscGenerate")}</Button>
-        <Button type="button" variant="outline" onClick={copyValue}>{t("miscCopy")}</Button>
-        <Button type="button" variant="outline" onClick={exportFile}>{t("miscExport")}</Button>
+        <Button type="button" variant="outline" onClick={copyValue} disabled={personas.length === 0 || fields.length === 0}>{t("miscCopy")}</Button>
+        <Button type="button" variant="outline" onClick={exportFile} disabled={personas.length === 0 || fields.length === 0}>{t("miscExport")}</Button>
       </div>
     </div>
   )

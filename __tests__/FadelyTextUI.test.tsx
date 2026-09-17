@@ -49,13 +49,13 @@ describe("FadelyTextUI", () => {
     expect(textArea).toHaveFocus()
   })
 
-  it("opens the dataset builder from the header nav while tabs stay at four", () => {
+  it("opens the dataset builder from the header nav with five tabs", () => {
     render(<FadelyTextUI />)
     fireEvent.click(screen.getByRole("button", { name: "Dataset" }))
 
     expect(screen.getByText("Fields")).toBeInTheDocument()
-    // Dataset lives only in the header nav; the tab strip is generate/counter/misc/tools.
-    expect(screen.getAllByRole("tab")).toHaveLength(4)
+    // Dataset is a full tab for keyboard/AT consistency: generate/counter/misc/dataset/tools.
+    expect(screen.getAllByRole("tab")).toHaveLength(5)
   })
 
   it("keeps the last size when the character input is cleared", () => {

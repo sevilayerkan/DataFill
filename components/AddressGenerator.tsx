@@ -67,7 +67,8 @@ export function AddressGenerator({ language, onCopy }: AddressGeneratorProps) {
       <Button onClick={generateAddress} className="w-full">
         {t("generateAddress")}
       </Button>
-      <Textarea value={address} readOnly className="h-24" />
+      <label htmlFor="generated-address" className="sr-only">{t("address")}</label>
+      <Textarea id="generated-address" value={address} readOnly aria-label={t("address")} className="h-24" />
       <Button variant="outline" className="w-full bg-transparent" onClick={copyToClipboard}>
         {t("copyToClipboard")}
       </Button>

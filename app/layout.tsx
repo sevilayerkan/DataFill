@@ -4,30 +4,50 @@ import "@/styles/globals.css";
 import { siteUrl } from "@/lib/site";
 import { ThemeProvider } from "@/components/theme-provider";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin", "latin-ext"] });
 
-const title = "FadelyText";
+const brand = "FadelyText";
+const title =
+  "FadelyText – Free Lorem Ipsum Generator, Word Counter & Fake Data Tools";
 const description =
-  "FadelyText is a text toolkit and fake data generator: lorem ipsum, character/word counter, email, name, address, phone and password generation. Available in English and Turkish.";
+  "Free online text toolkit: lorem ipsum generator, character & word counter, case converter, password generator, and fake name, email, address & phone data. No sign-up, works in English and Turkish.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
     default: title,
-    template: `%s | ${title}`,
+    template: `%s | ${brand}`,
   },
   description,
   keywords: [
-    "text tools",
     "lorem ipsum generator",
-    "character counter",
     "word counter",
+    "character counter",
+    "text tools",
+    "case converter",
     "fake data generator",
+    "fake name generator",
     "email generator",
     "password generator",
+    "address generator",
+    "phone number generator",
   ],
-  authors: [{ name: title }],
-  creator: title,
+  authors: [{ name: brand }],
+  creator: brand,
+  publisher: brand,
+  category: "technology",
+  applicationName: brand,
+  appleWebApp: {
+    capable: true,
+    title: brand,
+    statusBarStyle: "default",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  alternates: {
+    canonical: "/",
+  },
   robots: {
     index: true,
     follow: true,
@@ -52,7 +72,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    siteName: title,
+    siteName: brand,
     locale: "en_US",
     alternateLocale: ["tr_TR"],
     url: "/",
@@ -60,18 +80,18 @@ export const metadata: Metadata = {
     description,
     images: [
       {
-        url: "/apple-icon.png",
-        width: 180,
-        height: 180,
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
         alt: title,
       },
     ],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title,
     description,
-    images: ["/apple-icon.png"],
+    images: ["/opengraph-image"],
   },
 };
 

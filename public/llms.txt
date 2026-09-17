@@ -1,0 +1,24 @@
+# FadelyText
+
+> Free online text toolkit: lorem ipsum generation, character / word / line
+> counter, case conversion, Base64 and text diff, plus fake name, email,
+> address, phone and password generation. No sign-up, runs locally in the
+> browser. Available in English and Turkish.
+
+- Homepage: https://fadelytext.vercel.app/
+- Sitemap: https://fadelytext.vercel.app/sitemap.xml
+
+## Tools
+
+- Lorem ipsum generation by exact character count (options: no spaces, no special characters)
+- Character, word and line counter
+- Case converter (upper, lower, title, slug)
+- Sort and dedupe lines
+- Whitespace cleaner
+- Base64 encode and decode
+- Text diff (before / after)
+- Secure password generator (random or wordlist)
+- Fake data: full name, email, address, phone, UUID, date, TCKN, IBAN, VKN,
+  licence plate, username, company, job title, credit card (test), slug, color,
+  IPv4, IPv6, MAC, coordinates, hash, barcode, boolean, sentence, paragraph
+- Dataset builder (JSON, CSV, SQL export)
