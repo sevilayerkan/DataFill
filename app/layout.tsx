@@ -4,7 +4,7 @@ import "@/styles/globals.css";
 import { siteUrl } from "@/lib/site";
 import { ThemeProvider } from "@/components/theme-provider";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin", "latin-ext"] });
 
 const title = "FadelyText";
 const description =
