@@ -4,7 +4,7 @@ Text tools and fake data generator. Generates lorem ipsum, character/word counts
 
 ## Requirements
 
-- [Node.js](https://nodejs.org/) 18 or later
+- [Node.js](https://nodejs.org/) 20.9 or later (Next.js 16 requires >= 20.9)
 - [pnpm](https://pnpm.io/) (recommended; `pnpm-lock.yaml` is used)
 
 If pnpm is not installed:
