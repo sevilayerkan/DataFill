@@ -27,4 +27,4 @@ jobs:
       - run: pnpm build
         env:
           GITHUB_PAGES: "true"
-          NEXT_PUBLIC_SITE_URL: https://sevilayerkan.github.io/datafill
+          NEXT_PUBLIC_SITE_URL: https://sevilayerkan.github.io/DataFill

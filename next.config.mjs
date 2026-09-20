@@ -1,4 +1,4 @@
-const repoName = "datafill";
+const repoName = "DataFill";
 const isGithubPages = process.env.GITHUB_PAGES === "true";
 
 /** @type {import('next').NextConfig} */
@@ -9,7 +9,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  // Project Pages URL: https://sevilayerkan.github.io/datafill/
+  // Project Pages URL: https://sevilayerkan.github.io/DataFill/
   ...(isGithubPages ? { basePath: `/${repoName}` } : {}),
 };
 

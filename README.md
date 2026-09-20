@@ -36,7 +36,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 |----------|-------------|---------|
 | `NEXT_PUBLIC_SITE_URL` | Canonical site address; generates absolute URLs for Open Graph, `sitemap.xml`, and `robots.txt` | `http://localhost:3000` |
 
-In production (GitHub Pages), the deploy workflow sets `NEXT_PUBLIC_SITE_URL=https://sevilayerkan.github.io/datafill`.
+In production (GitHub Pages), the deploy workflow sets `NEXT_PUBLIC_SITE_URL=https://sevilayerkan.github.io/DataFill`.
 
 ## Other commands
 
