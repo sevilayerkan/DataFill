@@ -183,7 +183,7 @@ export function DatasetBuilder({ onCopy, language }: Props) {
 
   const exportFile = () => {
     const mime = format === "json" ? "application/json" : format === "csv" ? "text/csv" : "application/sql"
-    downloadTextFile(buildExportFilename(`fadelytext-dataset-${personas.length}`, format), value, mime)
+    downloadTextFile(buildExportFilename(`datafill-dataset-${personas.length}`, format), value, mime)
     onCopy(t(format === "json" ? "miscExportedJson" : format === "csv" ? "miscExportedCsv" : "miscExportedSql"))
   }
 

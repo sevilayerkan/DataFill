@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest"
 import { render, screen, fireEvent } from "@testing-library/react"
 import "@testing-library/jest-dom"
-import FadelyTextUI from "../components/FadelyTextUI"
+import DataFillUI from "../components/DataFillUI"
 
 function openSettings() {
   const settingsButton = screen.getByRole("button", { name: "Settings" })
@@ -11,7 +11,7 @@ function openSettings() {
 
 describe("SettingsDropdown", () => {
   it("keeps the language options hidden until the settings button is clicked", () => {
-    render(<FadelyTextUI />)
+    render(<DataFillUI />)
     expect(screen.queryByRole("menu", { name: "Settings" })).not.toBeInTheDocument()
 
     openSettings()
@@ -22,7 +22,7 @@ describe("SettingsDropdown", () => {
   })
 
   it("toggles closed when the settings button is clicked again", () => {
-    render(<FadelyTextUI />)
+    render(<DataFillUI />)
     const settingsButton = openSettings()
     expect(screen.getByRole("menu", { name: "Settings" })).toBeInTheDocument()
 
@@ -32,7 +32,7 @@ describe("SettingsDropdown", () => {
   })
 
   it("switches the UI language from the dropdown and closes it", () => {
-    render(<FadelyTextUI />)
+    render(<DataFillUI />)
     openSettings()
 
     fireEvent.click(screen.getByRole("menuitemradio", { name: "Turkish" }))
@@ -43,7 +43,7 @@ describe("SettingsDropdown", () => {
   })
 
   it("marks the active language as checked", () => {
-    render(<FadelyTextUI />)
+    render(<DataFillUI />)
     openSettings()
 
     expect(screen.getByRole("menuitemradio", { name: "English" })).toHaveAttribute("aria-checked", "true")
@@ -51,7 +51,7 @@ describe("SettingsDropdown", () => {
   })
 
   it("closes on Escape", () => {
-    render(<FadelyTextUI />)
+    render(<DataFillUI />)
     openSettings()
     expect(screen.getByRole("menu", { name: "Settings" })).toBeInTheDocument()
 
@@ -61,7 +61,7 @@ describe("SettingsDropdown", () => {
   })
 
   it("closes on outside click", () => {
-    render(<FadelyTextUI />)
+    render(<DataFillUI />)
     openSettings()
     expect(screen.getByRole("menu", { name: "Settings" })).toBeInTheDocument()
 

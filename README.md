@@ -1,4 +1,4 @@
-# FadelyText
+# DataFill
 
 Text tools and fake data generator. Generates lorem ipsum, character/word counts, email, name, address, phone number, and password. The UI is available in English and Turkish.
 
@@ -16,7 +16,7 @@ npm install -g pnpm
 ## Installation
 
 ```bash
-cd fadelytext
+cd datafill
 pnpm install
 ```
 
@@ -36,14 +36,14 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 |----------|-------------|---------|
 | `NEXT_PUBLIC_SITE_URL` | Canonical site address; generates absolute URLs for Open Graph, `sitemap.xml`, and `robots.txt` | `http://localhost:3000` |
 
-In production (e.g. Vercel), set `NEXT_PUBLIC_SITE_URL=https://your-domain.com`.
+In production (GitHub Pages), the deploy workflow sets `NEXT_PUBLIC_SITE_URL=https://sevilayerkan.github.io/datafill`.
 
 ## Other commands
 
 | Command | Description |
 |--------|-------------|
-| `pnpm build` | Production build |
-| `pnpm start` | Production server after a build (run `pnpm build` first) |
+| `pnpm build` | Production static export (writes to `out/`) |
+| `pnpm start` | Serve the `out/` folder after a build |
 | `pnpm lint` | ESLint |
 
 If you prefer not to use pnpm, `npm install` and `npm run dev` work too.
@@ -77,13 +77,13 @@ pnpm approve-builds sharp
 A Next.js (App Router) app. `@/` points to the root directory (`paths` in `tsconfig.json`).
 
 ```
-fadelytext/
+datafill/
 ├── app/                         # Pages and shell
 │   ├── layout.tsx               # HTML shell, font, metadata (tab title)
-│   ├── page.tsx                 # Home page → FadelyTextUI
+│   ├── page.tsx                 # Home page → DataFillUI
 │   └── globals.css
 ├── components/                  # UI
-│   ├── FadelyTextUI.tsx         # Main screen (tabs, theme, generate)
+│   ├── DataFillUI.tsx           # Main screen (tabs, theme, generate)
 │   ├── EmailGenerator.tsx
 │   ├── NameGenerator.tsx
 │   ├── AddressGenerator.tsx
@@ -100,7 +100,7 @@ fadelytext/
 └── README.md
 ```
 
-Flow: `app/layout.tsx` → `app/page.tsx` → `FadelyTextUI` → tabs and generators.
+Flow: `app/layout.tsx` → `app/page.tsx` → `DataFillUI` → tabs and generators.
 
 ## Renaming the project
 
@@ -108,10 +108,10 @@ The name lives in three (or four) separate places; the result depends on which o
 
 ### 1. npm / pnpm package name
 
-The `"name"` field in `package.json` (currently `fadelytext`). It must be lowercase with no spaces. It does not change what is shown in the browser.
+The `"name"` field in `package.json` (currently `datafill`). It must be lowercase with no spaces. It does not change what is shown in the browser.
 
 ```json
-"name": "fadelytext"
+"name": "datafill"
 ```
 
 ### 2. Browser tab title
@@ -120,20 +120,20 @@ The `metadata` in `app/layout.tsx`. Example:
 
 ```ts
 export const metadata = {
-  title: "FadelyText",
+  title: "DataFill",
   description: "Text tools and fake data generator",
 }
 ```
 
 ### 3. Product name shown on screen
 
-The header in `FadelyTextUI.tsx` uses `t("textTools")`. The strings are in the `textTools` key in `locales/en.json` and `locales/tr.json`.
+The header in `DataFillUI.tsx` uses `t("textTools")`. The strings are in the `textTools` key in `locales/en.json` and `locales/tr.json`.
 
-- EN: `"textTools": "FadelyText"`
-- TR: `"textTools": "FadelyText"` (brand name is not translated)
+- EN: `"textTools": "DataFill"`
+- TR: `"textTools": "DataFill"` (brand name is not translated)
 
-Since these are `"FadelyText"`, the brand name is shown in the header.
+Since these are `"DataFill"`, the brand name is shown in the header.
 
 ### 4. Folder name
 
-Renaming the folder is enough; the code does not use folder-name-dependent imports. Also update the `cd fadelytext` line in this README.
+Renaming the folder is enough; the code does not use folder-name-dependent imports. Also update the `cd datafill` line in this README.

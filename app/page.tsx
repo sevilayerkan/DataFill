@@ -1,11 +1,11 @@
-import FadelyTextUI from "@/components/FadelyTextUI";
+import DataFillUI from "@/components/DataFillUI";
 import { aboutFaqs } from "@/lib/about";
 import { siteUrl } from "@/lib/site";
 
 const webAppJsonLd = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
-  name: "FadelyText",
+  name: "DataFill",
   url: `${siteUrl}/`,
   applicationCategory: "UtilitiesApplication",
   operatingSystem: "Any",
@@ -46,11 +46,11 @@ export default function Home() {
       />
 
       <h1 className="sr-only">
-        FadelyText – Free Lorem Ipsum Generator, Word Counter &amp; Fake Data
+        DataFill – Free Lorem Ipsum Generator, Word Counter &amp; Fake Data
         Tools
       </h1>
 
-      <FadelyTextUI />
+      <DataFillUI />
     </>
   );
 }

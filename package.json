@@ -1,5 +1,5 @@
 {
-  "name": "fadelytext",
+  "name": "datafill",
   "version": "0.1.0",
   "private": true,
   "engines": {
@@ -9,7 +9,7 @@
     "build": "next build",
     "dev": "next dev --webpack",
     "lint": "eslint .",
-    "start": "next start",
+    "start": "npx --yes serve@14 out",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",

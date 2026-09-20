@@ -1,16 +1,16 @@
 import { describe, it, expect } from "vitest"
 import { render, screen, fireEvent } from "@testing-library/react"
 import "@testing-library/jest-dom"
-import FadelyTextUI from "../components/FadelyTextUI"
+import DataFillUI from "../components/DataFillUI"
 
-describe("FadelyTextUI", () => {
+describe("DataFillUI", () => {
   it("renders without crashing", () => {
-    render(<FadelyTextUI />)
-    expect(screen.getByText("FadelyText")).toBeInTheDocument()
+    render(<DataFillUI />)
+    expect(screen.getByText("DataFill")).toBeInTheDocument()
   })
 
   it("generates text with correct character count", () => {
-    render(<FadelyTextUI />)
+    render(<DataFillUI />)
     const characterInput = screen.getByLabelText("Characters:") as HTMLInputElement
     const generateButton = screen.getByText("Generate Text")
     const textArea = screen.getByPlaceholderText("Generated text will appear here...") as HTMLTextAreaElement
@@ -22,7 +22,7 @@ describe("FadelyTextUI", () => {
   })
 
   it("counts characters, words, and lines correctly", async () => {
-    render(<FadelyTextUI />)
+    render(<DataFillUI />)
     // Use the header nav button (plain onClick -> setActiveTab) instead of the
     // Radix TabsTrigger, which doesn't activate on synthetic fireEvent clicks in jsdom.
     fireEvent.click(screen.getByRole("button", { name: "Counter" }))
@@ -35,7 +35,7 @@ describe("FadelyTextUI", () => {
   })
 
   it("clears the counter field and resets the stats", async () => {
-    render(<FadelyTextUI />)
+    render(<DataFillUI />)
     fireEvent.click(screen.getByRole("button", { name: "Counter" }))
     const textArea = await screen.findByPlaceholderText("Type or paste your text here...") as HTMLTextAreaElement
 
@@ -49,17 +49,17 @@ describe("FadelyTextUI", () => {
     expect(textArea).toHaveFocus()
   })
 
-  it("opens the dataset builder from the header nav with five tabs", () => {
-    render(<FadelyTextUI />)
+  it("opens the dataset builder from the header nav", () => {
+    render(<DataFillUI />)
     fireEvent.click(screen.getByRole("button", { name: "Dataset" }))
 
     expect(screen.getByText("Fields")).toBeInTheDocument()
-    // Dataset is a full tab for keyboard/AT consistency: generate/counter/misc/dataset/tools.
-    expect(screen.getAllByRole("tab")).toHaveLength(5)
+    // Dataset stays in the header/hamburger; the tab strip is generate/counter/misc/tools.
+    expect(screen.getAllByRole("tab")).toHaveLength(4)
   })
 
   it("keeps the last size when the character input is cleared", () => {
-    render(<FadelyTextUI />)
+    render(<DataFillUI />)
     const characterInput = screen.getByLabelText("Characters:") as HTMLInputElement
     const generateButton = screen.getByText("Generate Text")
     const textArea = screen.getByPlaceholderText("Generated text will appear here...") as HTMLTextAreaElement

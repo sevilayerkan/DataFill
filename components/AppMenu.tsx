@@ -249,22 +249,28 @@ export function AppMenu({
                 <li>
                   <button type="button" className={itemClass(activeTab === "generate")} onClick={go(() => onNavigateTab("generate"))} aria-current={activeTab === "generate" ? "page" : undefined}>
                     <Type className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-                    <span className="min-w-0 flex-1 truncate">{t("generate")}</span>
-                    <span className="truncate text-xs text-muted-foreground">{t("menuGenerateDesc")}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate">{t("generate")}</span>
+                      <span className="block truncate text-xs font-normal text-muted-foreground">{t("menuGenerateDesc")}</span>
+                    </span>
                   </button>
                 </li>
                 <li>
                   <button type="button" className={itemClass(activeTab === "counter")} onClick={go(() => onNavigateTab("counter"))} aria-current={activeTab === "counter" ? "page" : undefined}>
                     <Hash className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-                    <span className="min-w-0 flex-1 truncate">{t("counter")}</span>
-                    <span className="truncate text-xs text-muted-foreground">{t("menuCounterDesc")}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate">{t("counter")}</span>
+                      <span className="block truncate text-xs font-normal text-muted-foreground">{t("menuCounterDesc")}</span>
+                    </span>
                   </button>
                 </li>
                 <li>
                   <button type="button" className={itemClass(activeTab === "dataset")} onClick={go(() => onNavigateTab("dataset"))} aria-current={activeTab === "dataset" ? "page" : undefined}>
                     <Database className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-                    <span className="min-w-0 flex-1 truncate">{t("dataset")}</span>
-                    <span className="truncate text-xs text-muted-foreground">{t("menuDatasetDesc")}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate">{t("dataset")}</span>
+                      <span className="block truncate text-xs font-normal text-muted-foreground">{t("menuDatasetDesc")}</span>
+                    </span>
                   </button>
                 </li>
               </MenuSection>

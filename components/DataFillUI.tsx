@@ -24,9 +24,9 @@ import { useTheme } from "next-themes"
 import { parseMiscUrlParams } from "@/components/MiscGenerator"
 import { parseToolsUrlParams, TOOL_IDS, type ToolId } from "@/lib/text-tools"
 
-const LANGUAGE_STORAGE_KEY = "fadelytext-language"
+const LANGUAGE_STORAGE_KEY = "datafill-language"
 
-export default function FadelyTextUI() {
+export default function DataFillUI() {
   const { theme, setTheme, resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const [generatedText, setGeneratedText] = useState("")
@@ -342,14 +342,10 @@ export default function FadelyTextUI() {
         </div>
       </header>
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)} className="w-full">
-        <TabsList
-          className="grid w-full grid-cols-5"
-          style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))" }}
-        >
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="generate">{t("generate")}</TabsTrigger>
           <TabsTrigger value="counter">{t("counter")}</TabsTrigger>
           <TabsTrigger value="misc">{t("misc")}</TabsTrigger>
-          <TabsTrigger value="dataset">{t("dataset")}</TabsTrigger>
           <TabsTrigger value="tools">{t("tools")}</TabsTrigger>
         </TabsList>
         <TabsContent value="generate" className="space-y-4">
@@ -480,7 +476,7 @@ export default function FadelyTextUI() {
       </Tabs>
       <footer className="mt-6 border-t pt-3 text-xs text-muted-foreground">
         <div className="flex items-center justify-between">
-          <span>FadelyText v1.0</span>
+          <span>DataFill v1.0</span>
           <div className="flex items-center gap-3">
             <button
               type="button"

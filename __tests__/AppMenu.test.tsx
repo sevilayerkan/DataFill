@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { render, screen, fireEvent, within } from "@testing-library/react"
 import "@testing-library/jest-dom"
-import FadelyTextUI from "../components/FadelyTextUI"
+import DataFillUI from "../components/DataFillUI"
 
 function mockClipboard() {
   Object.defineProperty(navigator, "clipboard", {
@@ -23,7 +23,7 @@ describe("AppMenu hamburger navigation", () => {
   })
 
   it("renders a hamburger button that opens a dialog with every feature", () => {
-    render(<FadelyTextUI />)
+    render(<DataFillUI />)
     const dialog = openMenu()
 
     // Main sections
@@ -51,7 +51,7 @@ describe("AppMenu hamburger navigation", () => {
   })
 
   it("deep-links to a generator and closes the menu", () => {
-    render(<FadelyTextUI />)
+    render(<DataFillUI />)
     const dialog = openMenu()
     fireEvent.click(within(dialog).getByRole("button", { name: "Email" }))
 
@@ -61,7 +61,7 @@ describe("AppMenu hamburger navigation", () => {
   })
 
   it("deep-links to a text tool and closes the menu", () => {
-    render(<FadelyTextUI />)
+    render(<DataFillUI />)
     const dialog = openMenu()
     fireEvent.click(within(dialog).getByRole("button", { name: "Diff" }))
 
@@ -72,7 +72,7 @@ describe("AppMenu hamburger navigation", () => {
   })
 
   it("switches generator while the misc panel is already open", () => {
-    render(<FadelyTextUI />)
+    render(<DataFillUI />)
     fireEvent.click(screen.getByRole("button", { name: "Misc" }))
     expect(window.location.search).toContain("tab=misc")
 
@@ -85,7 +85,7 @@ describe("AppMenu hamburger navigation", () => {
   })
 
   it("closes on Escape", () => {
-    render(<FadelyTextUI />)
+    render(<DataFillUI />)
     openMenu()
     fireEvent.keyDown(document, { key: "Escape" })
 

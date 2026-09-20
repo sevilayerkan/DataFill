@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { render, screen, fireEvent } from "@testing-library/react"
 import "@testing-library/jest-dom"
-import FadelyTextUI from "../components/FadelyTextUI"
+import DataFillUI from "../components/DataFillUI"
 
 function mockClipboard() {
   Object.defineProperty(navigator, "clipboard", {
@@ -14,13 +14,13 @@ function navTo(name: string) {
   fireEvent.click(screen.getByRole("button", { name }))
 }
 
-describe("FadelyTextUI tab navigation", () => {
+describe("DataFillUI tab navigation", () => {
   beforeEach(() => {
     mockClipboard()
   })
 
   it("opens the Misc generator from the header nav and syncs the URL", () => {
-    render(<FadelyTextUI />)
+    render(<DataFillUI />)
     navTo("Misc")
 
     // The count input only exists inside the Misc panel (header + panel
@@ -31,7 +31,7 @@ describe("FadelyTextUI tab navigation", () => {
   })
 
   it("opens the Tools tab and syncs the URL", () => {
-    render(<FadelyTextUI />)
+    render(<DataFillUI />)
     navTo("Tools")
 
     expect(screen.getByLabelText("Paste text here…")).toBeInTheDocument()
@@ -40,7 +40,7 @@ describe("FadelyTextUI tab navigation", () => {
 
   it("cleans tool/type params and the tab when returning to Generate", () => {
     window.history.replaceState(null, "", "/?tool=diff&tab=tools")
-    render(<FadelyTextUI />)
+    render(<DataFillUI />)
     expect(screen.getByLabelText("Before")).toBeInTheDocument()
 
     navTo("Generate")
@@ -51,44 +51,44 @@ describe("FadelyTextUI tab navigation", () => {
   })
 })
 
-describe("FadelyTextUI URL restore", () => {
+describe("DataFillUI URL restore", () => {
   beforeEach(() => {
     mockClipboard()
   })
 
   it("opens the counter from ?tab=counter", () => {
     window.history.replaceState(null, "", "/?tab=counter")
-    render(<FadelyTextUI />)
+    render(<DataFillUI />)
     expect(screen.getByPlaceholderText("Type or paste your text here...")).toBeInTheDocument()
   })
 
   it("opens tools from ?tab=tools", () => {
     window.history.replaceState(null, "", "/?tab=tools")
-    render(<FadelyTextUI />)
+    render(<DataFillUI />)
     expect(screen.getByLabelText("Paste text here…")).toBeInTheDocument()
   })
 
   it("prefers ?tool= over a stale tab", () => {
     window.history.replaceState(null, "", "/?tool=diff&tab=generate")
-    render(<FadelyTextUI />)
+    render(<DataFillUI />)
     expect(screen.getByLabelText("Before")).toBeInTheDocument()
   })
 
   it("prefers ?type= over a stale tab", () => {
     window.history.replaceState(null, "", "/?type=username&tab=generate")
-    render(<FadelyTextUI />)
+    render(<DataFillUI />)
     expect(screen.getByRole("spinbutton")).toBeInTheDocument()
     expect(screen.queryByLabelText("Characters:")).not.toBeInTheDocument()
   })
 
   it("ignores unknown tab values", () => {
     window.history.replaceState(null, "", "/?tab=nope")
-    render(<FadelyTextUI />)
+    render(<DataFillUI />)
     expect(screen.getByLabelText("Characters:")).toBeInTheDocument()
   })
 })
 
-describe("FadelyTextUI generate extras", () => {
+describe("DataFillUI generate extras", () => {
   beforeEach(() => {
     mockClipboard()
   })
@@ -102,7 +102,7 @@ describe("FadelyTextUI generate extras", () => {
   }
 
   it("restores the last size when the cleared field loses focus", () => {
-    render(<FadelyTextUI />)
+    render(<DataFillUI />)
     fireEvent.change(characterInput(), { target: { value: "" } })
     expect(characterInput().value).toBe("")
 
@@ -112,7 +112,7 @@ describe("FadelyTextUI generate extras", () => {
   })
 
   it("generates spaceless output with No Spaces checked", () => {
-    render(<FadelyTextUI />)
+    render(<DataFillUI />)
     fireEvent.click(screen.getByRole("checkbox", { name: "No Spaces" }))
     fireEvent.change(characterInput(), { target: { value: "50" } })
     fireEvent.click(screen.getByText("Generate Text"))
@@ -122,7 +122,7 @@ describe("FadelyTextUI generate extras", () => {
   })
 
   it("generates alphanumeric output with No Special Characters checked", () => {
-    render(<FadelyTextUI />)
+    render(<DataFillUI />)
     fireEvent.click(screen.getByRole("checkbox", { name: "No Special Characters" }))
     fireEvent.change(characterInput(), { target: { value: "50" } })
     fireEvent.click(screen.getByText("Generate Text"))
@@ -132,7 +132,7 @@ describe("FadelyTextUI generate extras", () => {
   })
 
   it("shows a notification when the generated text is copied", async () => {
-    render(<FadelyTextUI />)
+    render(<DataFillUI />)
     fireEvent.change(characterInput(), { target: { value: "10" } })
     fireEvent.click(screen.getByText("Generate Text"))
     fireEvent.click(screen.getByText("Copy to Clipboard"))
@@ -141,14 +141,14 @@ describe("FadelyTextUI generate extras", () => {
   })
 
   it("shows a notification when there is nothing to copy", async () => {
-    render(<FadelyTextUI />)
+    render(<DataFillUI />)
     fireEvent.click(screen.getByText("Copy to Clipboard"))
 
     expect(await screen.findByRole("status")).toHaveTextContent("No text to copy!")
   })
 
   it("lets the generated text be edited directly", () => {
-    render(<FadelyTextUI />)
+    render(<DataFillUI />)
     const output = screen.getByPlaceholderText(
       "Generated text will appear here...",
     ) as HTMLTextAreaElement
@@ -157,29 +157,29 @@ describe("FadelyTextUI generate extras", () => {
   })
 })
 
-describe("FadelyTextUI language + theme", () => {
+describe("DataFillUI language + theme", () => {
   beforeEach(() => {
     mockClipboard()
   })
 
   it("boots in Turkish when localStorage pins it", () => {
-    window.localStorage.setItem("fadelytext-language", "tr")
-    render(<FadelyTextUI />)
+    window.localStorage.setItem("datafill-language", "tr")
+    render(<DataFillUI />)
     expect(screen.getByText("Metin Üret")).toBeInTheDocument()
   })
 
   it("persists the language choice and sets the document lang", () => {
-    render(<FadelyTextUI />)
+    render(<DataFillUI />)
     fireEvent.click(screen.getByRole("button", { name: "Settings" }))
     fireEvent.click(screen.getByRole("menuitemradio", { name: "Turkish" }))
 
-    expect(window.localStorage.getItem("fadelytext-language")).toBe("tr")
+    expect(window.localStorage.getItem("datafill-language")).toBe("tr")
     expect(document.documentElement.lang).toBe("tr")
     expect(screen.getByText("Metin Üret")).toBeInTheDocument()
   })
 
   it("toggles the theme switch without crashing", () => {
-    render(<FadelyTextUI />)
+    render(<DataFillUI />)
     const themeSwitch = screen.getByRole("switch")
     fireEvent.click(themeSwitch)
     expect(screen.getByRole("switch")).toBeInTheDocument()

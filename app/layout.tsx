@@ -6,9 +6,9 @@ import { ThemeProvider } from "@/components/theme-provider";
 
 const inter = Inter({ subsets: ["latin", "latin-ext"] });
 
-const brand = "FadelyText";
+const brand = "DataFill";
 const title =
-  "FadelyText – Free Lorem Ipsum Generator, Word Counter & Fake Data Tools";
+  "DataFill – Free Lorem Ipsum Generator, Word Counter & Fake Data Tools";
 const description =
   "Free online text toolkit: lorem ipsum generator, character & word counter, case converter, password generator, and fake name, email, address & phone data. No sign-up, works in English and Turkish.";
 

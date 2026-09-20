@@ -4,9 +4,9 @@ import "@testing-library/jest-dom"
 import Home from "../app/page"
 
 describe("Home page", () => {
-  it("renders the FadelyText UI", () => {
+  it("renders the DataFill UI", () => {
     render(<Home />)
-    expect(screen.getByText("FadelyText")).toBeInTheDocument()
+    expect(screen.getByText("DataFill")).toBeInTheDocument()
     expect(screen.getByText("Generate Text")).toBeInTheDocument()
   })
 })

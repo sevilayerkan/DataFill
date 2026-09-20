@@ -1,8 +1,8 @@
 /**
  * Canonical site URL used for absolute SEO URLs (Open Graph, sitemap, robots).
  *
- * Set `NEXT_PUBLIC_SITE_URL` in production (e.g. Vercel env
- * `NEXT_PUBLIC_SITE_URL=https://your-domain.com`).
+ * Set `NEXT_PUBLIC_SITE_URL` in production (GitHub Pages workflow sets
+ * `NEXT_PUBLIC_SITE_URL=https://sevilayerkan.github.io/datafill`).
  * Falls back to `http://localhost:3000` for local development.
  * Trailing slashes are stripped so callers can safely do `${siteUrl}/...`.
  */

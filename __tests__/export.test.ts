@@ -97,7 +97,7 @@ describe("formatCsv", () => {
 
 describe("buildExportFilename", () => {
   it("appends the extension to a clean base", () => {
-    expect(buildExportFilename("fadelytext-names-10", "json")).toBe("fadelytext-names-10.json")
+    expect(buildExportFilename("datafill-names-10", "json")).toBe("datafill-names-10.json")
     expect(buildExportFilename("data", "csv")).toBe("data.csv")
     expect(buildExportFilename("data", "sql")).toBe("data.sql")
   })
@@ -118,7 +118,7 @@ describe("buildExportFilename", () => {
   })
 
   it("matches the real caller shape", () => {
-    expect(buildExportFilename("fadelytext-john-5", "json")).toBe("fadelytext-john-5.json")
+    expect(buildExportFilename("datafill-john-5", "json")).toBe("datafill-john-5.json")
   })
 })
 

@@ -781,7 +781,7 @@ export function MiscGenerator({ onCopy, language, selectedType, onSelectedTypeCh
     const ext = isJson ? "json" : "csv"
     const content = isJson ? formatJson(exportRows, withId) : formatCsv(exportRows, withId)
     downloadTextFile(
-      buildExportFilename(`fadelytext-${type}-${exportRows.length}`, ext),
+      buildExportFilename(`datafill-${type}-${exportRows.length}`, ext),
       content,
       isJson ? "application/json" : "text/csv",
     )

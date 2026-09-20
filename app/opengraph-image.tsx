@@ -1,9 +1,7 @@
 import { ImageResponse } from "next/og";
 
-export const runtime = "edge";
-
 export const alt =
-  "FadelyText – Free Lorem Ipsum Generator, Word Counter & Fake Data Tools";
+  "DataFill – Free Lorem Ipsum Generator, Word Counter & Fake Data Tools";
 export const size = {
   width: 1200,
   height: 630,
@@ -47,9 +45,9 @@ export default function OpengraphImage() {
               fontWeight: 800,
             }}
           >
-            T
+            D
           </div>
-          <div style={{ fontSize: "40px", fontWeight: 700 }}>FadelyText</div>
+          <div style={{ fontSize: "40px", fontWeight: 700 }}>DataFill</div>
         </div>
         <div
           style={{

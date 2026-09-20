@@ -8,14 +8,14 @@ export default function NotFound() {
         Page not found
       </h1>
       <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-muted-foreground">
-        This page does not exist. FadelyText&apos;s text tools and fake data
+        This page does not exist. DataFill&apos;s text tools and fake data
         generators are on the homepage.
       </p>
       <Link
         href="/"
         className="mt-6 inline-block rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
       >
-        Back to FadelyText
+        Back to DataFill
       </Link>
     </div>
   );

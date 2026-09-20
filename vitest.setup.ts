@@ -9,7 +9,7 @@ class ResizeObserverMock {
 }
 vi.stubGlobal("ResizeObserver", ResizeObserverMock);
 
-// Persisted UI state (language via fadelytext-language, theme via next-themes)
+// Persisted UI state (language via datafill-language, theme via next-themes)
 // lives in localStorage and would otherwise leak between tests in the same file.
 beforeEach(() => {
   window.localStorage.clear();

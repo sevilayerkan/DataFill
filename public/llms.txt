@@ -1,12 +1,12 @@
-# FadelyText
+# DataFill
 
 > Free online text toolkit: lorem ipsum generation, character / word / line
 > counter, case conversion, Base64 and text diff, plus fake name, email,
 > address, phone and password generation. No sign-up, runs locally in the
 > browser. Available in English and Turkish.
 
-- Homepage: https://fadelytext.vercel.app/
-- Sitemap: https://fadelytext.vercel.app/sitemap.xml
+- Homepage: https://datafill.vercel.app/
+- Sitemap: https://datafill.vercel.app/sitemap.xml
 
 ## Tools
 

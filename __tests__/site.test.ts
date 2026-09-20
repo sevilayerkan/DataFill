@@ -19,9 +19,9 @@ describe("siteUrl", () => {
   })
 
   it("uses NEXT_PUBLIC_SITE_URL when set", async () => {
-    process.env[KEY] = "https://fadelytext.vercel.app"
+    process.env[KEY] = "https://datafill.vercel.app"
     vi.resetModules()
     const { siteUrl } = await import("../lib/site")
-    expect(siteUrl).toBe("https://fadelytext.vercel.app")
+    expect(siteUrl).toBe("https://datafill.vercel.app")
   })
 })

@@ -1,22 +1,16 @@
+const repoName = "datafill";
+const isGithubPages = process.env.GITHUB_PAGES === "true";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: "export",
   poweredByHeader: false,
-  async headers() {
-    return [
-      {
-        source: "/:path*",
-        headers: [
-          { key: "X-Content-Type-Options", value: "nosniff" },
-          { key: "X-Frame-Options", value: "SAMEORIGIN" },
-          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          {
-            key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=()",
-          },
-        ],
-      },
-    ];
+  trailingSlash: true,
+  images: {
+    unoptimized: true,
   },
+  // Project Pages URL: https://sevilayerkan.github.io/datafill/
+  ...(isGithubPages ? { basePath: `/${repoName}` } : {}),
 };
 
 export default nextConfig

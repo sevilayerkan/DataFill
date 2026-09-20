@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest"
 import { render, screen, fireEvent } from "@testing-library/react"
 import "@testing-library/jest-dom"
-import FadelyTextUI from "../components/FadelyTextUI"
+import DataFillUI from "../components/DataFillUI"
 import {
   LOREM_BASE,
   LOREM_MAX_LENGTH,
@@ -91,16 +91,16 @@ describe("generateLoremSentence / generateLoremParagraph", () => {
   })
 })
 
-describe("FadelyTextUI lorem max-len control", () => {
+describe("DataFillUI lorem max-len control", () => {
   it("exposes min/max bounds on the character input", () => {
-    render(<FadelyTextUI />)
+    render(<DataFillUI />)
     const characterInput = screen.getByLabelText("Characters:") as HTMLInputElement
     expect(characterInput).toHaveAttribute("min", String(LOREM_MIN_LENGTH))
     expect(characterInput).toHaveAttribute("max", String(LOREM_MAX_LENGTH))
   })
 
   it("caps generated output at the max length", () => {
-    render(<FadelyTextUI />)
+    render(<DataFillUI />)
     const characterInput = screen.getByLabelText("Characters:") as HTMLInputElement
     const generateButton = screen.getByText("Generate Text")
     const textArea = screen.getByPlaceholderText("Generated text will appear here...") as HTMLTextAreaElement
@@ -112,7 +112,7 @@ describe("FadelyTextUI lorem max-len control", () => {
   })
 
   it("warns instead of silently clamping when over the max", () => {
-    render(<FadelyTextUI />)
+    render(<DataFillUI />)
     const characterInput = screen.getByLabelText("Characters:") as HTMLInputElement
     const generateButton = screen.getByText("Generate Text")
     const textArea = screen.getByPlaceholderText("Generated text will appear here...") as HTMLTextAreaElement
@@ -129,7 +129,7 @@ describe("FadelyTextUI lorem max-len control", () => {
   })
 
   it("shows no warning for in-range input", () => {
-    render(<FadelyTextUI />)
+    render(<DataFillUI />)
     const characterInput = screen.getByLabelText("Characters:") as HTMLInputElement
     const generateButton = screen.getByText("Generate Text")
 
@@ -140,7 +140,7 @@ describe("FadelyTextUI lorem max-len control", () => {
   })
 
   it("clears the warning once the value is back in range", () => {
-    render(<FadelyTextUI />)
+    render(<DataFillUI />)
     const characterInput = screen.getByLabelText("Characters:") as HTMLInputElement
 
     fireEvent.change(characterInput, { target: { value: "99999999" } })
@@ -151,7 +151,7 @@ describe("FadelyTextUI lorem max-len control", () => {
   })
 
   it("clamps non-positive input up to the min length", () => {
-    render(<FadelyTextUI />)
+    render(<DataFillUI />)
     const characterInput = screen.getByLabelText("Characters:") as HTMLInputElement
     const generateButton = screen.getByText("Generate Text")
     const textArea = screen.getByPlaceholderText("Generated text will appear here...") as HTMLTextAreaElement
