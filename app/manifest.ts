@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
+import { basePath } from "@/lib/base-path";
 
-const basePath =
-  process.env.GITHUB_PAGES === "true" ? "/datafill" : "";
+export const dynamic = "force-static";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {

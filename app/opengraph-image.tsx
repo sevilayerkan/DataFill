@@ -1,5 +1,7 @@
 import { ImageResponse } from "next/og";
 
+export const dynamic = "force-static";
+
 export const alt =
   "DataFill – Free Lorem Ipsum Generator, Word Counter & Fake Data Tools";
 export const size = {
